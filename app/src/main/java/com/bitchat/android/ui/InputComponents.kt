@@ -250,7 +250,6 @@ fun MessageInput(
                 }
             }
         }
-        
         Spacer(modifier = Modifier.width(8.dp)) // Reduced spacing
         
         // Voice and image buttons when no text (only visible in Mesh chat)

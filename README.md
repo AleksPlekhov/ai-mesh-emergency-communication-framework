@@ -1,308 +1,251 @@
-<p align="center">
-    <img src="https://github.com/user-attachments/assets/188c42f8-d249-4a72-b27a-e2b4f10a00a8" alt="Bitchat Android Logo" width="480">
-</p>
+# DisasterMesh AI Framework
 
-> [!WARNING]
-> This software has not received external security review and may contain vulnerabilities and may not necessarily meet its stated security goals. Do not use it for sensitive use cases, and do not rely on its security until it has been reviewed. Work in progress.
+> **An open-source Android framework extending BLE mesh communication with on-device AI capabilities for disaster response and emergency communication.**
 
-# bitchat for Android
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Platform](https://img.shields.io/badge/Platform-Android%208.0%2B-green.svg)](https://developer.android.com)
+[![Language](https://img.shields.io/badge/Language-Kotlin-orange.svg)](https://kotlinlang.org)
+[![Status](https://img.shields.io/badge/Status-Active%20Research-yellow.svg)]()
 
-A secure, decentralized, peer-to-peer messaging app that works over Bluetooth mesh networks. No internet required for mesh chats, no servers, no phone numbers - just pure encrypted communication. Bitchat also supports geohash channels, which use an internet connection to connect you with others in your geographic area.
+---
 
-This is the **Android port** of the original [bitchat iOS app](https://github.com/jackjackbits/bitchat), maintaining 100% protocol compatibility for cross-platform communication.
+## Overview
 
-## Install bitchat
+**DisasterMesh AI Framework** is a research-driven Android framework built on top of the [BitChat](https://github.com/permissionlesstech/bitchat-android) open-source BLE mesh messaging protocol. It extends core mesh communication with an **on-device AI layer** specifically designed for disaster response scenarios where internet infrastructure is unavailable or destroyed.
 
-You can download the latest version of bitchat for Android from the [GitHub Releases page](https://github.com/permissionlesstech/bitchat-android/releases).
+During natural disasters — hurricanes, earthquakes, wildfires — traditional communication infrastructure fails precisely when it is needed most. This framework addresses that critical gap by combining:
 
-Or you can:
+- **Decentralized BLE mesh networking** — no internet, no servers, no single point of failure
+- **On-device AI inference** — intelligent decisions made locally, without cloud dependency
+- **FEMA-compatible reporting** — outputs aligned with U.S. federal emergency management standards
 
-[<img alt="Get it on Google Play" height="60" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"/>](https://play.google.com/store/apps/details?id=com.bitchat.droid)
+This project directly supports U.S. national priorities in **emergency preparedness**, **disaster resilience**, and **critical communication infrastructure** as identified in the White House 2024 Critical and Emerging Technologies List under *Integrated Communication and Networking Technologies*.
 
-**Instructions:**
+---
 
-1.  **Download the APK:** On your Android device, navigate to the link above and download the latest `.apk` file. Open it.
-2.  **Allow Unknown Sources:** On some devices, before you can install the APK, you may need to enable "Install from unknown sources" in your device's settings. This is typically found under **Settings > Security** or **Settings > Apps & notifications > Special app access**.
-3.  **Install:** Open the downloaded `.apk` file to begin the installation.
+## The Problem
 
-## License
+In disaster zones, communication breakdown is one of the leading causes of preventable casualties. Existing solutions have critical limitations:
 
-This project is released into the public domain. See the [LICENSE](LICENSE.md) file for details.
+| Problem | Current State | DisasterMesh AI Approach |
+|---|---|---|
+| Message overload | All messages treated equally | AI prioritizes by criticality |
+| Injured/disabled users | Text-only input | Offline speech recognition |
+| No situational overview | Manual data collection | Auto-generated FEMA reports |
+| Battery drain | Always-on radio | AI-driven adaptive energy management |
+| No coordinator tools | Raw message feeds | Structured incident summaries |
 
-## Features
+---
 
-- **✅ Cross-Platform Compatible**: Full protocol compatibility with iOS bitchat
-- **✅ Decentralized Mesh Network**: Automatic peer discovery and multi-hop message relay over Bluetooth LE
-- **✅ End-to-End Encryption**: X25519 key exchange + AES-256-GCM for private messages
-- **✅ Channel-Based Chats**: Topic-based group messaging with optional password protection
-- **✅ Store & Forward**: Messages cached for offline peers and delivered when they reconnect
-- **✅ Privacy First**: No accounts, no phone numbers, no persistent identifiers
-- **✅ IRC-Style Commands**: Familiar `/join`, `/msg`, `/who` style interface
-- **✅ Message Retention**: Optional channel-wide message saving controlled by channel owners
-- **✅ Emergency Wipe**: Triple-tap logo to instantly clear all data
-- **✅ Modern Android UI**: Jetpack Compose with Material Design 3
-- **✅ Dark/Light Themes**: Terminal-inspired aesthetic matching iOS version
-- **✅ Battery Optimization**: Adaptive scanning and power management
+## Architecture
 
-## Android Setup
-
-### Prerequisites
-
-- **Android Studio**: Arctic Fox (2020.3.1) or newer
-- **Android SDK**: API level 26 (Android 8.0) or higher
-- **Kotlin**: 1.8.0 or newer
-- **Gradle**: 7.0 or newer
-
-### Build Instructions
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/permissionlesstech/bitchat-android.git
-   cd bitchat-android
-   ```
-
-2. **Open in Android Studio:**
-   ```bash
-   # Open Android Studio and select "Open an Existing Project"
-   # Navigate to the bitchat-android directory
-   ```
-
-3. **Build the project:**
-   ```bash
-   ./gradlew build
-   ```
-
-4. **Install on device:**
-   ```bash
-   ./gradlew installDebug
-   ```
-
-### Development Build
-
-For development builds with debugging enabled:
-
-```bash
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+┌─────────────────────────────────────────────────────┐
+│              DisasterMesh AI Framework               │
+├─────────────────────────────────────────────────────┤
+│  [M1] AI Message        │  [M2] Offline Speech      │
+│  Priority Classifier    │  Recognition (STT)        │
+│  TFLite on-device      │  Vosk / Whisper Android   │
+├─────────────────────────────────────────────────────┤
+│  [M3] FEMA ICS-213      │  [M4] AI Energy           │
+│  Report Generator       │  Optimizer                │
+│  Situation awareness   │  BLE/WiFi adaptive mgmt   │
+├─────────────────────────────────────────────────────┤
+│           BitChat BLE Mesh Protocol Layer            │
+│     (Bluetooth LE · Noise Protocol · Multi-hop)     │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Release Build
+---
 
-For production releases:
+## Core Modules
+
+### M1 — AI Message Priority Classifier
+
+Classifies incoming mesh messages into priority tiers using an on-device TFLite model. In a disaster zone, not all messages are equal — a medical emergency must reach rescue coordinators before routine check-in messages.
+
+**Priority levels:**
+- `CRITICAL` — Medical emergencies, SOS signals, structural collapse reports
+- `HIGH` — Evacuation requests, missing persons, hazard warnings
+- `MEDIUM` — Location sharing, resource requests
+- `NORMAL` — General communication, status updates
+
+**Technical approach:** Fine-tuned lightweight text classification model (DistilBERT-tiny or MobileBERT) converted to TFLite, running entirely on-device. Fallback rule-based classifier ensures functionality on low-end hardware.
+
+**Why it matters:** Rescue coordinators receiving hundreds of messages simultaneously cannot manually triage. AI prioritization directly reduces response time for life-threatening situations.
+
+---
+
+### M2 — Offline Speech Recognition (STT)
+
+Enables voice-to-text message input without internet connectivity, using on-device speech recognition.
+
+**Implementation:** [Vosk Android](https://alphacephei.com/vosk/android) — lightweight (~50MB), supports Android 5.0+, works on any device.
+
+**Use cases:**
+- Users with hand injuries cannot type
+- Dark environments where screen visibility is limited
+- Panic situations where voice is faster than typing
+- Accessibility for users with disabilities
+
+**Why it matters:** In disaster scenarios, physical and cognitive stress significantly impairs fine motor skills. Voice input removes a critical barrier to communication when it matters most.
+
+---
+
+### M3 — FEMA ICS-213 Situation Report Generator
+
+Automatically aggregates prioritized messages from across the mesh network and generates structured situation reports compatible with the **FEMA Incident Command System (ICS-213)** General Message standard.
+
+**Output includes:**
+- Active mesh node count and network topology summary
+- Incident count by priority category
+- Geographic clustering of distress signals (when location sharing enabled)
+- Timestamp-indexed event log
+
+**Why it matters:** Emergency coordinators need structured, actionable information — not raw message feeds. ICS-213 compatibility ensures reports integrate directly into existing federal and state emergency management workflows.
+
+---
+
+### M4 — AI Energy Optimizer
+
+Intelligently manages radio interface switching and node role assignment to maximize mesh network lifetime under battery constraints.
+
+**Capabilities:**
+- Adaptive BLE scan interval based on network traffic patterns
+- Dynamic switching between BLE and Wi-Fi Direct based on bandwidth requirements and battery level
+- AI-driven relay node selection — assigns relay responsibility to devices with higher battery reserves
+- Passive mode transition for critically low-battery devices while maintaining mesh participation
+
+**Why it matters:** In prolonged disaster scenarios (multi-day events), battery life is a critical constraint. Extending network lifetime by even 20-30% can be the difference between maintaining communication during critical rescue windows.
+
+---
+
+## Roadmap
+
+**Phase 1 — Core AI Framework (current, 0–3 months):**
+- ✅ Project forked from BitChat Android (GPL-3.0)
+- 🔄 M1: AI Message Priority Classifier — on-device TFLite text classification for emergency triage
+- 🔄 M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
+- 🔄 M3: FEMA ICS-213 Report Generator — automated situation reports compatible with federal emergency standards
+- 🔄 M4: AI Energy Optimizer — adaptive BLE/Wi-Fi switching and intelligent relay node management
+
+**Phase 2 (6–12 months):**
+- Spatial pattern detection — geographic clustering of incident reports with visual heatmap
+- Real-time situational awareness map for coordinator dashboard
+- Protocol-level battery metadata broadcasting across mesh nodes
+
+**Phase 3 (12-24 months):**
+- Federated learning — distributed AI model improvement across mesh nodes without sharing raw data
+- LLM-based natural language situation report generation (on-device, quantized models)
+- Multi-language support for diverse disaster-affected populations
+- Integration with FEMA IPAWS (Integrated Public Alert and Warning System)
+
+---
+
+## National Importance & Research Context
+
+This framework addresses priorities identified by multiple U.S. federal initiatives:
+
+- **White House 2024 Critical and Emerging Technologies List** — *Integrated Communication and Networking Technologies* explicitly includes mesh networks and infrastructure-independent communication technologies
+- **NSF RINGS Program** — $37M investment in resilient next-generation networking systems
+- **FEMA Strategic Plan 2022-2026** — priority on technology-driven disaster resilience
+- **FCC Disaster Information Reporting System** — need for resilient communication during infrastructure failures
+
+---
+
+## Technical Stack
+
+| Component | Technology |
+|---|---|
+| Language | Kotlin |
+| UI Framework | Jetpack Compose + Material Design 3 |
+| AI/ML Runtime | TensorFlow Lite |
+| Speech Recognition | Vosk Android (offline) |
+| Mesh Transport | Bluetooth Low Energy (BLE) |
+| Encryption | Noise Protocol Framework |
+| Mesh Routing | Multi-hop flood routing with Bloom Filter deduplication |
+| Minimum Android | 8.0 (API 26) |
+
+---
+
+## Getting Started
 
 ```bash
-./gradlew assembleRelease
+# Clone the repository
+git clone https://github.com/AleksPlekhov/ai-mesh-emergency-communication-framework.git
+
+# Open in Android Studio
+# File → Open → select project directory
+
+# Build
+./gradlew build
+
+# Install on device
+./gradlew installDebug
 ```
 
-## Android-Specific Requirements
+**Requirements:**
+- Android Studio Hedgehog or later
+- Android device or emulator running API 26+
+- Bluetooth LE capable hardware (for mesh testing)
+- Minimum 2 devices recommended for mesh testing
 
-### Permissions
+---
 
-The app requires the following permissions (automatically requested):
+## Based On
 
-- **Bluetooth**: Core BLE functionality
-- **Location**: Required for BLE scanning on Android
-- **Network**: Expand your mesh through public internet relays
-- **Notifications**: Message alerts and background updates
+This framework extends **BitChat Android** ([permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android)), an open-source BLE mesh messaging application released under GPL-3.0. The core BLE mesh transport, Noise Protocol encryption, and multi-hop routing are derived from BitChat. The AI inference layer, speech recognition module, FEMA reporting system, and energy optimization components are original contributions of this project.
 
-### Hardware Requirements
+In accordance with GPL-3.0, this project is released under the same license and all source code is publicly available.
 
-- **Bluetooth LE (BLE)**: Required for mesh networking
-- **Android 8.0+**: API level 26 minimum
-- **RAM**: 2GB recommended for optimal performance
+---
 
-## Usage
+## Research & Publications
 
-### Basic Commands
+- *[Preprint — coming soon]* "AI-Driven Message Prioritization for Offline BLE Mesh Networks in Disaster Response Scenarios" — arXiv
 
-- `/j #channel` - Join or create a channel
-- `/m @name message` - Send a private message
-- `/w` - List online users
-- `/channels` - Show all discovered channels
-- `/block @name` - Block a peer from messaging you
-- `/block` - List all blocked peers
-- `/unblock @name` - Unblock a peer
-- `/clear` - Clear chat messages
-- `/pass [password]` - Set/change channel password (owner only)
-- `/transfer @name` - Transfer channel ownership
-- `/save` - Toggle message retention for channel (owner only)
+*This section will be updated as research outputs are published.*
 
-### Getting Started
-
-1. **Install the app** on your Android device (requires Android 8.0+)
-2. **Grant permissions** for Bluetooth and location when prompted
-3. **Launch bitchat** - it will auto-start mesh networking
-4. **Set your nickname** or use the auto-generated one
-5. **Connect automatically** to nearby iOS and Android bitchat users
-6. **Join a channel** with `/j #general` or start chatting in public
-7. **Messages relay** through the mesh network to reach distant peers
-
-### Android UI Features
-
-- **Jetpack Compose UI**: Modern Material Design 3 interface
-- **Dark/Light Themes**: Terminal-inspired aesthetic matching iOS
-- **Haptic Feedback**: Vibrations for interactions and notifications
-- **Adaptive Layout**: Optimized for various Android screen sizes
-- **Message Status**: Real-time delivery and read receipts
-- **RSSI Indicators**: Signal strength colors for each peer
-
-### Channel Features
-
-- **Password Protection**: Channel owners can set passwords with `/pass`
-- **Message Retention**: Owners can enable mandatory message saving with `/save`
-- **@ Mentions**: Use `@nickname` to mention users (with autocomplete)
-- **Ownership Transfer**: Pass control to trusted users with `/transfer`
-
-## Security & Privacy
-
-### Encryption
-- **Private Messages**: X25519 key exchange + AES-256-GCM encryption
-- **Channel Messages**: Argon2id password derivation + AES-256-GCM
-- **Digital Signatures**: Ed25519 for message authenticity
-- **Forward Secrecy**: New key pairs generated each session
-
-### Privacy Features
-- **No Registration**: No accounts, emails, or phone numbers required
-- **Ephemeral by Default**: Messages exist only in device memory
-- **Cover Traffic**: Random delays and dummy messages prevent traffic analysis
-- **Emergency Wipe**: Triple-tap logo to instantly clear all data
-- **Bundled Tor Support**: Built-in Tor network integration for enhanced privacy when internet connectivity is available
-
-## Performance & Efficiency
-
-### Message Compression
-- **LZ4 Compression**: Automatic compression for messages >100 bytes
-- **30-70% bandwidth savings** on typical text messages
-- **Smart compression**: Skips already-compressed data
-
-### Battery Optimization
-- **Adaptive Power Modes**: Automatically adjusts based on battery level
-  - Performance mode: Full features when charging or >60% battery
-  - Balanced mode: Default operation (30-60% battery)
-  - Power saver: Reduced scanning when <30% battery
-  - Ultra-low power: Emergency mode when <10% battery
-- **Background efficiency**: Automatic power saving when app backgrounded
-- **Configurable scanning**: Duty cycle adapts to battery state
-
-### Network Efficiency
-- **Optimized Bloom filters**: Faster duplicate detection with less memory
-- **Message aggregation**: Batches small messages to reduce transmissions
-- **Adaptive connection limits**: Adjusts peer connections based on power mode
-
-## Technical Architecture
-
-### Binary Protocol
-bitchat uses an efficient binary protocol optimized for Bluetooth LE:
-- Compact packet format with 1-byte type field
-- TTL-based message routing (max 7 hops)
-- Automatic fragmentation for large messages
-- Message deduplication via unique IDs
-
-### Mesh Networking
-- Each device acts as both client and peripheral
-- Automatic peer discovery and connection management
-- Store-and-forward for offline message delivery
-- Adaptive duty cycling for battery optimization
-
-### Android-Specific Optimizations
-- **Coroutine Architecture**: Asynchronous operations for mesh networking
-- **Kotlin Coroutines**: Thread-safe concurrent mesh operations
-- **EncryptedSharedPreferences**: Secure storage for user settings
-- **Lifecycle-Aware**: Proper handling of Android app lifecycle
-- **Battery Optimization**: Foreground service and adaptive scanning
-
-## Android Technical Architecture
-
-### Core Components
-
-1. **BitchatApplication.kt**: Application-level initialization and dependency injection
-2. **MainActivity.kt**: Main activity handling permissions and UI hosting
-3. **ChatViewModel.kt**: MVVM pattern managing app state and business logic
-4. **BluetoothMeshService.kt**: Core BLE mesh networking (central + peripheral roles)
-5. **EncryptionService.kt**: Cryptographic operations using BouncyCastle
-6. **BinaryProtocol.kt**: Binary packet encoding/decoding matching iOS format
-7. **ChatScreen.kt**: Jetpack Compose UI with Material Design 3
-
-### Dependencies
-
-- **Jetpack Compose**: Modern declarative UI
-- **BouncyCastle**: Cryptographic operations (X25519, Ed25519, AES-GCM)
-- **Nordic BLE Library**: Reliable Bluetooth LE operations
-- **Kotlin Coroutines**: Asynchronous programming
-- **LZ4**: Message compression (when enabled)
-- **EncryptedSharedPreferences**: Secure local storage
-
-### Binary Protocol Compatibility
-
-The Android implementation maintains 100% binary protocol compatibility with iOS:
-- **Header Format**: Identical 13-byte header structure
-- **Packet Types**: Same message types and routing logic
-- **Encryption**: Identical cryptographic algorithms and key exchange
-- **UUIDs**: Same Bluetooth service and characteristic identifiers
-- **Fragmentation**: Compatible message fragmentation for large content
-
-## Publishing to Google Play
-
-### Preparation
-
-1. **Update version information:**
-   ```kotlin
-   // In app/build.gradle.kts
-   defaultConfig {
-       versionCode = 2  // Increment for each release
-       versionName = "1.1.0"  // User-visible version
-   }
-   ```
-
-2. **Create a signed release build:**
-   ```bash
-   ./gradlew assembleRelease
-   ```
-
-3. **Generate app bundle (recommended for Play Store):**
-   ```bash
-   ./gradlew bundleRelease
-   ```
-
-### Play Store Requirements
-
-- **Target API**: Latest Android API (currently 34)
-- **Privacy Policy**: Required for apps requesting sensitive permissions
-- **App Permissions**: Justify Bluetooth and location usage
-- **Content Rating**: Complete questionnaire for age-appropriate content
-
-### Distribution
-
-- **Google Play Store**: Main distribution channel
-- **F-Droid**: For open-source distribution
-- **Direct APK**: For testing and development
-
-## Cross-Platform Communication
-
-This Android port enables seamless communication with the original iOS bitchat app:
-
-- **iPhone ↔ Android**: Full bidirectional messaging
-- **Mixed Groups**: iOS and Android users in same channels
-- **Feature Parity**: All commands and encryption work across platforms
-- **Protocol Sync**: Identical message format and routing behavior
-
-**iOS Version**: For iPhone/iPad users, get the original bitchat at [github.com/jackjackbits/bitchat](https://github.com/jackjackbits/bitchat)
+---
 
 ## Contributing
 
-Contributions are welcome! Key areas for enhancement:
+Contributions are welcome. This is an active research project and we particularly value:
 
-1. **Performance**: Battery optimization and connection reliability
-2. **UI/UX**: Additional Material Design 3 features
-3. **Security**: Enhanced cryptographic features
-4. **Testing**: Unit and integration test coverage
-5. **Documentation**: API documentation and development guides
+- Testing on diverse Android hardware
+- Disaster scenario simulation datasets
+- ML model improvements for message classification
+- Multilingual speech recognition integration
 
-## Support & Issues
+Please open an issue before submitting a pull request for significant changes.
 
-- **Bug Reports**: [Create an issue](../../issues) with device info and logs
-- **Feature Requests**: [Start a discussion](https://github.com/orgs/permissionlesstech/discussions)
-- **Security Issues**: Email security concerns privately
-- **iOS Compatibility**: Cross-reference with [original iOS repo](https://github.com/jackjackbits/bitchat)
+---
 
-For iOS-specific issues, please refer to the [original iOS bitchat repository](https://github.com/jackjackbits/bitchat).
+## Author
+
+**Oleksandr Pliekhov**
+Lead Android & Mesh Developer | Researcher
+Charlotte, North Carolina, USA
+
+*Research focus: AI-enhanced offline communication systems for emergency response*
+
+---
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE) for details.
+
+In accordance with GPL-3.0 requirements, this project is derived from [BitChat Android](https://github.com/permissionlesstech/bitchat-android) and maintains the same open-source license. All modifications and additions are documented in the commit history.
+
+---
+
+## Acknowledgments
+
+- [permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android) — foundational BLE mesh protocol implementation
+- [Vosk Speech Recognition](https://alphacephei.com/vosk/) — offline STT engine
+- [TensorFlow Lite](https://www.tensorflow.org/lite) — on-device ML inference
+- FEMA Incident Command System — ICS-213 standard reference
+
+---
+
+*DisasterMesh AI Framework is an independent research project. It is not affiliated with FEMA, NSF, or any U.S. government agency.*

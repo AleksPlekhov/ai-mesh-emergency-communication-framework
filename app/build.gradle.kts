@@ -144,6 +144,9 @@ dependencies {
     
     // EXIF orientation handling for images
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+
+    // Vosk offline speech recognition (STT)
+    implementation(libs.vosk.android)
     
     // Testing
     testImplementation(libs.bundles.testing)

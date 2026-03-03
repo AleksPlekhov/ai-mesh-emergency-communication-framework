@@ -23,6 +23,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.OffsetMapping
@@ -313,7 +314,22 @@ fun MessageInput(
                     )
                 }
             )
-            
+
+            // Vosk STT button: tap to speak → transcribed text is inserted into the input field
+            val latestOnValueChange = rememberUpdatedState(onValueChange)
+            val latestValue = rememberUpdatedState(value)
+            VoskTranscribeButton(
+                enabled = !isRecording,
+                backgroundColor = bg,
+                onTranscribed = { text ->
+                    val current = latestValue.value.text
+                    val newText = if (current.isEmpty()) text else "$current $text"
+                    latestOnValueChange.value(
+                        TextFieldValue(newText, TextRange(newText.length))
+                    )
+                }
+            )
+
         } else {
             // Send button with enabled/disabled state
             IconButton(

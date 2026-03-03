@@ -63,6 +63,9 @@ kotlinx-coroutines-test = "1.6"
 
 lifecycle-process = "2.8.7"
 
+# Vosk offline speech recognition
+vosk-android = "0.3.47"
+
 [libraries]
 # AndroidX Core
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
@@ -116,6 +119,9 @@ androidx-security-crypto = { module = "androidx.security:security-crypto", versi
 
 # QR
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
+
+# Vosk offline speech recognition
+vosk-android = { module = "com.alphacephei:vosk-android", version.ref = "vosk-android" }
 
 # CameraX / ML Kit
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }

@@ -125,7 +125,7 @@ Intelligently manages radio interface switching and node role assignment to maxi
 **Phase 1 — Core AI Framework (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
 - 🔄 M1: AI Message Priority Classifier — on-device TFLite text classification for emergency triage
-- 🔄 M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
+- ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
 - 🔄 M3: FEMA ICS-213 Report Generator — automated situation reports compatible with federal emergency standards
 - 🔄 M4: AI Energy Optimizer — adaptive BLE/Wi-Fi switching and intelligent relay node management
 

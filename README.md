@@ -230,6 +230,7 @@ Intelligently manages radio relay decisions based on battery state to maximize m
 - ✅ M3: FEMA ICS-213 Report Generator — Compose-rendered report with share/print support; pure-Kotlin HTML generator in `:resqmesh-ai`
 - ✅ M4: AI Energy Optimizer (first iteration) — `EnergyRelayPolicy` adapts relay probability to battery state; CRITICAL packets always relay even at ULTRA_LOW_POWER
 
+
 **Phase 2 (6–12 months):**
 - Spatial pattern detection — geographic clustering of incident reports with visual heatmap
 - Real-time situational awareness map for coordinator dashboard

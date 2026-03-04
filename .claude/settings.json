@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'set -e; INPUT=$(cat); NAME=$(echo \"$INPUT\" | jq -r .name); CWD=$(echo \"$INPUT\" | jq -r .cwd); BRANCH=\"feature/$NAME\"; DIR=\"$CWD/.claude/worktrees/$NAME\"; git -C \"$CWD\" worktree add \"$DIR\" -b \"$BRANCH\" >&2; echo \"$DIR\"'"
+          }
+        ]
+      }
+    ]
+  }
+}

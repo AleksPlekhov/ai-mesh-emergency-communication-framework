@@ -1,14 +1,11 @@
-
-package com.bitchat.android.features.voice
+package com.bitchat.android.ai.voice
 
 import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -44,7 +41,7 @@ class VoiceRecorder(private val context: Context) {
             rec.setAudioEncodingBitRate(20_000)
             rec.setOutputFile(file.absolutePath)
             rec.prepare()
-            rec.start() 
+            rec.start()
             recorder = rec
             outFile = file
             file

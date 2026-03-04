@@ -56,6 +56,22 @@ In disaster zones, communication breakdown is one of the leading causes of preve
 └─────────────────────────────────────────────────────┘
 ```
 
+### Gradle Module Structure
+
+The project uses a multi-module Gradle build to cleanly separate AI concerns from the core application:
+
+```
+:app                        — Android application (UI, mesh, crypto, routing)
+:disastermesh-ai            — All AI/ML functionality (self-contained library)
+    ├── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
+    └── ai/classifier/      — Message priority classification
+          ├── KeywordMessageClassifier   (rule-based, always available)
+          ├── TFLiteMessageClassifier    (TFLite model, activated by dropping .tflite asset)
+          └── MessageClassifierFactory   (selects best available backend at runtime)
+```
+
+The `:disastermesh-ai` module is an Android library with no dependency on `:app`, keeping AI code independently testable and reusable.
+
 ---
 
 ## Core Modules
@@ -67,10 +83,14 @@ Classifies incoming mesh messages into priority tiers using an on-device TFLite 
 **Priority levels:**
 - `CRITICAL` — Medical emergencies, SOS signals, structural collapse reports
 - `HIGH` — Evacuation requests, missing persons, hazard warnings
-- `MEDIUM` — Location sharing, resource requests
 - `NORMAL` — General communication, status updates
+- `LOW` — Routine check-ins, test messages
 
-**Technical approach:** Fine-tuned lightweight text classification model (DistilBERT-tiny or MobileBERT) converted to TFLite, running entirely on-device. Fallback rule-based classifier ensures functionality on low-end hardware.
+**Technical approach:** Two-tier classifier in `:disastermesh-ai`:
+1. **`KeywordMessageClassifier`** — FEMA/ICS keyword rules (SOS, MAYDAY, EVACUATE, FIRE, FLOOD, etc.), always available with no model assets.
+2. **`TFLiteMessageClassifier`** — Fine-tuned lightweight model (DistilBERT-tiny or MobileBERT) converted to TFLite. Activated automatically when `message_classifier.tflite` is placed in module assets.
+
+`MessageClassifierFactory` selects the best available backend at runtime, ensuring the system degrades gracefully on constrained hardware.
 
 **Why it matters:** Rescue coordinators receiving hundreds of messages simultaneously cannot manually triage. AI prioritization directly reduces response time for life-threatening situations.
 
@@ -124,8 +144,9 @@ Intelligently manages radio interface switching and node role assignment to maxi
 
 **Phase 1 — Core AI Framework (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
-- 🔄 M1: AI Message Priority Classifier — on-device TFLite text classification for emergency triage
-- 🔄 M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
+- ✅ `:disastermesh-ai` Gradle module — dedicated AI library module, independent of `:app`
+- 🔄 M1: AI Message Priority Classifier — keyword rule-based classifier operational; TFLite model stub ready (drop in `.tflite` asset to activate)
+- ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required), fully implemented in `:disastermesh-ai`
 - 🔄 M3: FEMA ICS-213 Report Generator — automated situation reports compatible with federal emergency standards
 - 🔄 M4: AI Energy Optimizer — adaptive BLE/Wi-Fi switching and intelligent relay node management
 
@@ -155,16 +176,17 @@ This framework addresses priorities identified by multiple U.S. federal initiati
 
 ## Technical Stack
 
-| Component | Technology |
-|---|---|
-| Language | Kotlin |
-| UI Framework | Jetpack Compose + Material Design 3 |
-| AI/ML Runtime | TensorFlow Lite |
-| Speech Recognition | Vosk Android (offline) |
-| Mesh Transport | Bluetooth Low Energy (BLE) |
-| Encryption | Noise Protocol Framework |
-| Mesh Routing | Multi-hop flood routing with Bloom Filter deduplication |
-| Minimum Android | 8.0 (API 26) |
+| Component | Technology | Module |
+|---|---|---|
+| Language | Kotlin | — |
+| UI Framework | Jetpack Compose + Material Design 3 | `:app` |
+| AI/ML Runtime | TensorFlow Lite 2.14 | `:disastermesh-ai` |
+| Speech Recognition | Vosk Android 0.3.47 (offline) | `:disastermesh-ai` |
+| Message Classifier | Keyword rules + TFLite model | `:disastermesh-ai` |
+| Mesh Transport | Bluetooth Low Energy (BLE) | `:app` |
+| Encryption | Noise Protocol Framework | `:app` |
+| Mesh Routing | Multi-hop flood routing with Bloom Filter deduplication | `:app` |
+| Minimum Android | 8.0 (API 26) | — |
 
 ---
 

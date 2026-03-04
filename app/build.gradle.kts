@@ -145,9 +145,9 @@ dependencies {
     // EXIF orientation handling for images
     implementation("androidx.exifinterface:exifinterface:1.3.7")
 
-    // Vosk offline speech recognition (STT)
-    implementation(libs.vosk.android)
-    
+    // AI module (voice STT, message classifier, and future AI features)
+    implementation(project(":disastermesh-ai"))
+
     // Testing
     testImplementation(libs.bundles.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))

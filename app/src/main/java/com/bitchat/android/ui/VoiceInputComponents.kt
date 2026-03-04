@@ -24,9 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.bitchat.android.features.voice.VoiceRecorder
-import com.bitchat.android.features.voice.VoskManager
-import com.bitchat.android.features.voice.VoskState
+import com.bitchat.android.ai.voice.VoiceRecorder
+import com.bitchat.android.ai.voice.VoskManager
+import com.bitchat.android.ai.voice.VoskState
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState

@@ -19,4 +19,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "bitchat-android"
 include(":app")
+include(":disastermesh-ai")
 // Using published Arti AAR; local module not included

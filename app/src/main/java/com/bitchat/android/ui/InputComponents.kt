@@ -39,8 +39,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.withStyle
 import com.bitchat.android.ui.theme.BASE_FONT_SIZE
-import com.bitchat.android.features.voice.normalizeAmplitudeSample
-import com.bitchat.android.features.voice.AudioWaveformExtractor
+import com.bitchat.android.ai.voice.normalizeAmplitudeSample
+import com.bitchat.android.ai.voice.AudioWaveformExtractor
 import com.bitchat.android.ui.media.RealtimeScrollingWaveform
 import com.bitchat.android.ui.media.ImagePickerButton
 import com.bitchat.android.ui.media.FilePickerButton
@@ -302,7 +302,7 @@ fun MessageInput(
                     // Extract and cache waveform from the actual audio file to match receiver rendering
                     AudioWaveformExtractor.extractAsync(path, sampleCount = 120) { arr ->
                         if (arr != null) {
-                            try { com.bitchat.android.features.voice.VoiceWaveformCache.put(path, arr) } catch (_: Exception) {}
+                            try { com.bitchat.android.ai.voice.VoiceWaveformCache.put(path, arr) } catch (_: Exception) {}
                         }
                     }
                     // BLE path (private or public) — use latest values to avoid stale captures

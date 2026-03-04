@@ -1,4 +1,4 @@
-package com.bitchat.android.features.voice
+package com.bitchat.android.ai.voice
 
 import android.content.Context
 import android.util.Log

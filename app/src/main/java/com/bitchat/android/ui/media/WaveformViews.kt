@@ -18,9 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.bitchat.android.features.voice.AudioWaveformExtractor
-import com.bitchat.android.features.voice.VoiceWaveformCache
-import com.bitchat.android.features.voice.resampleWave
+import com.bitchat.android.ai.voice.AudioWaveformExtractor
+import com.bitchat.android.ai.voice.VoiceWaveformCache
+import com.bitchat.android.ai.voice.resampleWave
 
 @Composable
 fun ScrollingWaveformRecorder(

@@ -182,8 +182,8 @@ fun MessageItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // Thin white outline on every message — gives a card-like separation.
-            .border(width = 0.5.dp, color = Color.White.copy(alpha = 0.18f))
+            // White outline on every message — gives a card-like separation.
+            .border(width = 1.dp, color = Color.White.copy(alpha = 0.3f))
             // For emergency messages: draw the colored 3 dp left stripe on top of
             // the white border, so the left side becomes the emergency indicator.
             .then(

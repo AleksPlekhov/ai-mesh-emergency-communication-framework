@@ -71,29 +71,48 @@ fun emergencyBorderColor(classification: ClassificationResult): Color? {
 }
 
 /**
- * Small one-line badge that appears below the message text for classified emergencies.
+ * Small one-line badge that appears below every classified message text.
  *
- * Example render:  🏥 MEDICAL · 97%
+ * • Emergency  → colored emoji badge  e.g.  🏥 MEDICAL · 97%
+ * • No match   → dim grey marker          e.g.  · —
  *
- * The badge colour mirrors the border so the two elements feel coupled.
- * Nothing is rendered if the classification doesn't meet the threshold.
+ * Nothing is rendered if [classification] is null (message not yet processed).
  */
 @Composable
 fun EmergencyBadge(classification: ClassificationResult) {
-    val color = emergencyBorderColor(classification) ?: return   // early-out for plain messages
-    val (emoji, label) = emojiAndLabel(classification)
+    val color = emergencyBorderColor(classification)
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(top = 2.dp)
-    ) {
-        Text(
-            text = "$emoji $label · ${(classification.confidence * 100).toInt()}%",
-            fontSize = 11.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Medium,
-            color = color
-        )
+    if (color != null) {
+        // ── Emergency / warning badge ─────────────────────────────────────
+        val (emoji, label) = emojiAndLabel(classification)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 2.dp)
+        ) {
+            Text(
+                text = "$emoji $label · ${(classification.confidence * 100).toInt()}%",
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Medium,
+                color = color
+            )
+        }
+    } else {
+        // ── No-category marker ────────────────────────────────────────────
+        // Message was analysed but no emergency signal was found.
+        // A subtle "· —" keeps the layout height consistent without
+        // drawing attention away from actual emergencies.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 2.dp)
+        ) {
+            Text(
+                text = "· —",
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                color = Color.Gray.copy(alpha = 0.45f)
+            )
+        }
     }
 }
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,6 +68,7 @@ fun MessagesList(
     currentUserNickname: String,
     meshService: BluetoothMeshService,
     modifier: Modifier = Modifier,
+    connectedPeersCount: Int = 0,
     forceScrollToBottom: Boolean = false,
     onScrolledUpChanged: ((Boolean) -> Unit)? = null,
     onNicknameClick: ((String) -> Unit)? = null,
@@ -92,8 +94,17 @@ fun MessagesList(
     }
     // ──────────────────────────────────────────────────────────────────────
 
+    // ── Empty state ────────────────────────────────────────────────────────
+    if (messages.isEmpty()) {
+        EmptyMessagesState(
+            connectedPeersCount = connectedPeersCount,
+            modifier = modifier
+        )
+        return
+    }
+
     val listState = rememberLazyListState()
-    
+
     // Track if this is the first time messages are being loaded
     var hasScrolledToInitialPosition by remember { mutableStateOf(false) }
     var followIncomingMessages by remember { mutableStateOf(true) }
@@ -190,11 +201,11 @@ fun MessageItem(
                 if (borderColor != null) Modifier.drawBehind {
                     drawRect(
                         color = borderColor,
-                        size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)
+                        size = androidx.compose.ui.geometry.Size(6.dp.toPx(), size.height)
                     )
                 } else Modifier
             )
-            .padding(start = startPad, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            .padding(all = 6.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -511,6 +522,63 @@ fun MessageItem(
             ),
             onTextLayout = { result -> textLayoutResult = result }
         )
+    }
+}
+
+/**
+ * Shown when the message list is empty.
+ *
+ * Renders a centred, monospace-style placeholder explaining what the feed
+ * does and how many peers are currently reachable.
+ */
+@Composable
+fun EmptyMessagesState(
+    connectedPeersCount: Int = 0,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 32.dp)
+        ) {
+            Text(
+                text = "No messages yet.",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = colorScheme.onSurface.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "$connectedPeersCount peers connected.",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                color = colorScheme.onSurface.copy(alpha = 0.55f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "When someone sends a message\nemergencies will be auto-tagged\nand appear in 🚨 Feed.",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                color = colorScheme.onSurface.copy(alpha = 0.45f),
+                textAlign = TextAlign.Center,
+                lineHeight = 17.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "type a message...",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                color = colorScheme.onSurface.copy(alpha = 0.30f),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

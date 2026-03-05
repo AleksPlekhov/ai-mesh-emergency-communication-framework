@@ -135,6 +135,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 currentUserNickname = nickname,
                 meshService = viewModel.meshService,
                 modifier = Modifier.weight(1f),
+                connectedPeersCount = connectedPeers.size,
                 forceScrollToBottom = forceScrollToBottom,
                 onScrolledUpChanged = { isUp -> isScrolledUp = isUp },
                 onNicknameClick = { fullSenderName ->

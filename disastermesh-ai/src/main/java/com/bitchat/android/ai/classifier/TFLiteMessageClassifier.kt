@@ -2,6 +2,7 @@ package com.bitchat.android.ai.classifier
 
 import android.content.Context
 import android.util.Log
+import org.json.JSONObject
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
 import java.nio.MappedByteBuffer
@@ -10,36 +11,57 @@ import java.nio.channels.FileChannel
 private const val TAG = "TFLiteClassifier"
 
 /**
- * TFLite-backed message priority classifier.
+ * TFLite-backed emergency message classifier.
  *
- * Expects a quantized INT8 or FLOAT32 model at [MODEL_ASSET_PATH] in the app's assets.
- * The model must accept a single float input tensor of shape [1, MAX_SEQ_LEN] (token IDs)
- * and produce a float output tensor of shape [1, 4] (logits for CRITICAL/HIGH/NORMAL/LOW).
+ * Uses:
+ *  - [MODEL_ASSET]     — trained TFLite model (emergency_model.tflite)
+ *  - [TOKENIZER_ASSET] — Keras word-level tokenizer config (tokenizer.json)
+ *  - [LABELS_ASSET]    — index → category name map (label_map.json)
  *
- * Drop a trained `message_classifier.tflite` into `disastermesh-ai/src/main/assets/` to activate.
- * Until then, [MessageClassifierFactory] routes to [KeywordMessageClassifier] automatically.
+ * Pipeline (mirrors what Keras did at training time):
+ *   1. Strip punctuation → lowercase → split on whitespace
+ *   2. Map each word to its integer ID from word_index (unknown → OOV index 1)
+ *   3. Pad with zeros / truncate to the model's input sequence length
+ *   4. Run TFLite interpreter  →  float[1][9] output logits
+ *   5. Softmax → argmax → look up label → map to [MessagePriority]
  */
 class TFLiteMessageClassifier(context: Context) : MessagePriorityClassifier {
 
-    private val interpreter: Interpreter = loadInterpreter(context)
+    private val interpreter: Interpreter
+    private val seqLen: Int
+    private val wordIndex: Map<String, Int>   // word → int id
+    private val labels: Map<Int, String>       // class idx → category name (e.g. "MEDICAL")
+
+    init {
+        interpreter = loadInterpreter(context)
+        // Query the actual input sequence length directly from the loaded model tensor
+        seqLen = interpreter.getInputTensor(0).shape()[1]
+        wordIndex = loadWordIndex(context)
+        labels = loadLabels(context)
+        Log.d(TAG, "Loaded — seqLen=$seqLen, vocab=${wordIndex.size}, labels=${labels.values}")
+    }
 
     override fun classify(
         messageText: String,
         metadata: Map<String, String>
     ): ClassificationResult {
-        val input = tokenize(messageText)
-        val output = Array(1) { FloatArray(LABEL_COUNT) }
+        val inputIds = ClassifierUtils.tokenize(messageText, wordIndex, seqLen)
 
+        // TFLite embedding layers expect Int32 input
+        val input  = Array(1) { inputIds }
+        val output = Array(1) { FloatArray(labels.size) }
         interpreter.run(input, output)
 
-        val logits = output[0]
-        val maxIdx = logits.indices.maxByOrNull { logits[it] } ?: 0
-        val confidence = softmax(logits)[maxIdx]
+        val probs      = ClassifierUtils.softmax(output[0])
+        val maxIdx     = probs.indices.maxByOrNull { probs[it] } ?: 0
+        val confidence = probs[maxIdx]
+        val category   = labels[maxIdx] ?: "UNKNOWN"
 
         return ClassificationResult(
-            priority = PRIORITY_LABELS[maxIdx],
-            confidence = confidence,
-            reasoning = "TFLite model (confidence=${String.format("%.2f", confidence)})"
+            priority      = ClassifierUtils.mapToPriority(category),
+            confidence    = confidence,
+            emergencyType = category,
+            reasoning     = "TFLite[$category] conf=${String.format("%.0f", confidence * 100)}%"
         )
     }
 
@@ -47,45 +69,33 @@ class TFLiteMessageClassifier(context: Context) : MessagePriorityClassifier {
         runCatching { interpreter.close() }
     }
 
-    // ---- private helpers ----
+    // ── Asset loaders ─────────────────────────────────────────────────────────
 
-    private fun tokenize(text: String): Array<FloatArray> {
-        // Minimal whitespace tokenizer — replace with a proper vocab lookup when a real model is
-        // integrated. Each token maps to its index in a trivial char-level encoding for now.
-        val tokens = FloatArray(MAX_SEQ_LEN) { 0f }
-        text.lowercase().split(" ").take(MAX_SEQ_LEN).forEachIndexed { i, word ->
-            tokens[i] = word.hashCode().and(0x7FFFFFFF).rem(VOCAB_SIZE).toFloat()
-        }
-        return arrayOf(tokens)
+    private fun loadWordIndex(context: Context): Map<String, Int> {
+        val json   = context.assets.open(TOKENIZER_ASSET).bufferedReader().readText()
+        val config = JSONObject(json).getJSONObject("config")
+        val raw    = JSONObject(config.getString("word_index"))
+        return buildMap { raw.keys().forEach { word -> put(word, raw.getInt(word)) } }
     }
 
-    private fun softmax(logits: FloatArray): FloatArray {
-        val max = logits.max()
-        val exps = logits.map { Math.exp((it - max).toDouble()).toFloat() }
-        val sum = exps.sum()
-        return exps.map { it / sum }.toFloatArray()
+    private fun loadLabels(context: Context): Map<Int, String> {
+        val json = context.assets.open(LABELS_ASSET).bufferedReader().readText()
+        val obj  = JSONObject(json)
+        return buildMap { obj.keys().forEach { key -> put(key.toInt(), obj.getString(key)) } }
     }
 
     companion object {
-        const val MODEL_ASSET_PATH = "message_classifier.tflite"
-        private const val MAX_SEQ_LEN = 64
-        private const val VOCAB_SIZE = 10_000
-        private const val LABEL_COUNT = 4
-
-        private val PRIORITY_LABELS = listOf(
-            MessagePriority.CRITICAL,
-            MessagePriority.HIGH,
-            MessagePriority.NORMAL,
-            MessagePriority.LOW
-        )
+        const val MODEL_ASSET     = "emergency_model.tflite"
+        const val TOKENIZER_ASSET = "tokenizer.json"
+        const val LABELS_ASSET    = "label_map.json"
 
         fun isModelAvailable(context: Context): Boolean = runCatching {
-            context.assets.open(MODEL_ASSET_PATH).close()
+            context.assets.open(MODEL_ASSET).close()
             true
         }.getOrDefault(false)
 
         private fun loadInterpreter(context: Context): Interpreter {
-            val afd = context.assets.openFd(MODEL_ASSET_PATH)
+            val afd    = context.assets.openFd(MODEL_ASSET)
             val buffer: MappedByteBuffer = FileInputStream(afd.fileDescriptor).channel.map(
                 FileChannel.MapMode.READ_ONLY,
                 afd.startOffset,

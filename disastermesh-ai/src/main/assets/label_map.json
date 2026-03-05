@@ -1,0 +1,11 @@
+{
+  "0": "FIRE",
+  "1": "FLOOD",
+  "2": "MEDICAL",
+  "3": "COLLAPSE",
+  "4": "INFRASTRUCTURE",
+  "5": "SECURITY",
+  "6": "WEATHER",
+  "7": "MISSING_PERSON",
+  "8": "RESOURCE_REQUEST"
+}

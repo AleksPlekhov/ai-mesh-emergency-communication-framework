@@ -177,13 +177,13 @@ fun MessageItem(
     // Resolve border color — null means plain message (no colored stripe).
     val borderColor = classification?.let { emergencyBorderColor(it) }
     // Content is indented right of the colored stripe so text never overlaps it.
-    val startPad = if (borderColor != null) 10.dp else 6.dp
+    val startPad = if (borderColor != null) 10.dp else 4.dp
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             // White outline on every message — gives a card-like separation.
-            .border(width = 1.dp, color = Color.White.copy(alpha = 0.3f))
+            .border(width = 1.dp, color = Color.White.copy(alpha = 0.5f))
             // For emergency messages: draw the colored 3 dp left stripe on top of
             // the white border, so the left side becomes the emergency indicator.
             .then(
@@ -194,7 +194,7 @@ fun MessageItem(
                     )
                 } else Modifier
             )
-            .padding(start = startPad, end = 4.dp, top = 2.dp, bottom = 2.dp),
+            .padding(start = startPad, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {

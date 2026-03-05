@@ -2,11 +2,17 @@ package com.bitchat.android.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.mutableStateMapOf
+import com.bitchat.android.ai.classifier.ClassificationResult
+import com.bitchat.android.ai.classifier.MessageClassifierFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
  
 
 import androidx.compose.material3.*
@@ -67,6 +73,24 @@ fun MessagesList(
     onCancelTransfer: ((BitchatMessage) -> Unit)? = null,
     onImageClick: ((String, List<String>, Int) -> Unit)? = null
 ) {
+    // ── Emergency classifier ───────────────────────────────────────────────
+    val context = LocalContext.current
+    // One classifier per composition tree — reused across recompositions.
+    val classifier = remember { MessageClassifierFactory.create(context) }
+    // Persistent cache: message.id → ClassificationResult.
+    // We never re-classify an already-seen message (content can't change).
+    val classificationCache = remember { mutableStateMapOf<String, ClassificationResult>() }
+    // Classify each new text message in the background so TFLite doesn't block the UI thread.
+    LaunchedEffect(messages.size) {
+        messages.forEach { msg ->
+            if (msg.id !in classificationCache && msg.type == BitchatMessageType.Message) {
+                val result = withContext(Dispatchers.Default) { classifier.classify(msg.content) }
+                classificationCache[msg.id] = result
+            }
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     val listState = rememberLazyListState()
     
     // Track if this is the first time messages are being loaded
@@ -123,6 +147,7 @@ fun MessagesList(
                     messages = messages,
                     currentUserNickname = currentUserNickname,
                     meshService = meshService,
+                    classification = classificationCache[message.id],
                     onNicknameClick = onNicknameClick,
                     onMessageLongPress = onMessageLongPress,
                     onCancelTransfer = onCancelTransfer,
@@ -139,6 +164,7 @@ fun MessageItem(
     currentUserNickname: String,
     meshService: BluetoothMeshService,
     messages: List<BitchatMessage> = emptyList(),
+    classification: ClassificationResult? = null,
     onNicknameClick: ((String) -> Unit)? = null,
     onMessageLongPress: ((BitchatMessage) -> Unit)? = null,
     onCancelTransfer: ((BitchatMessage) -> Unit)? = null,
@@ -146,9 +172,25 @@ fun MessageItem(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-    
+
+    // Resolve border color — null means this is a plain (non-emergency) message.
+    val borderColor = classification?.let { emergencyBorderColor(it) }
+    // Content is indented right of the border stripe so text never overlaps it.
+    val startPad = if (borderColor != null) 10.dp else 0.dp
+
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            // Draw the 3 dp colored left stripe behind the content.
+            .then(
+                if (borderColor != null) Modifier.drawBehind {
+                    drawRect(
+                        color = borderColor,
+                        size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)
+                    )
+                } else Modifier
+            )
+            .padding(start = startPad),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -190,8 +232,12 @@ fun MessageItem(
                 }
             }
         }
-        
-        // Link previews removed; links are now highlighted inline and clickable within the message text
+
+        // Emergency badge — only for text messages that crossed the confidence threshold.
+        // Shown below the message text, inside the bordered area.
+        if (classification != null && message.type == BitchatMessageType.Message) {
+            EmergencyBadge(classification = classification)
+        }
     }
 }
 

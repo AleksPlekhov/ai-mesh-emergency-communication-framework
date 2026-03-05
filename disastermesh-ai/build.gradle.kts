@@ -34,6 +34,12 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            // Required by Robolectric so JVM tests can open assets (model, tokenizer, label map)
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -53,4 +59,7 @@ dependencies {
 
     // Testing
     testImplementation(libs.bundles.testing)
+    // org.json is stubbed in Android unit tests; provide the real implementation
+    // so @BeforeClass can parse tokenizer.json and label_map.json on the JVM.
+    testImplementation("org.json:json:20231013")
 }

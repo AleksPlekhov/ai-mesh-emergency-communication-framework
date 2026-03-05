@@ -16,14 +16,15 @@ import com.bitchat.android.ai.classifier.MessagePriority
 
 // ── Confidence threshold ───────────────────────────────────────────────────────
 //
-//  For the TFLite classifier every message gets a category.  Without a minimum
-//  confidence gate, even "Hello!" would show a badge.  65 % is a practical
-//  threshold — well above random-chance (11 %) yet leaves room for short texts.
+//  For the TFLite classifier every message gets one of 9 categories.  Random
+//  chance is ~11 %.  We show a badge when the model is at least 4× more
+//  confident than chance (45 %), which is meaningful signal while still letting
+//  less dominant categories (FIRE, FLOOD, etc.) surface.
 //
 //  For the keyword classifier the confidence is hardcoded (0.95 / 0.85) and the
 //  emergencyType is always set, so they always pass.
 //
-private const val CONFIDENCE_THRESHOLD = 0.65f
+private const val CONFIDENCE_THRESHOLD = 0.45f
 
 /**
  * Returns true when this result should render a colored border + badge.

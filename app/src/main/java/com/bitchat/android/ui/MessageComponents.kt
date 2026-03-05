@@ -45,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import com.bitchat.android.ui.media.FileMessageItem
@@ -173,15 +174,18 @@ fun MessageItem(
     val colorScheme = MaterialTheme.colorScheme
     val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
 
-    // Resolve border color — null means this is a plain (non-emergency) message.
+    // Resolve border color — null means plain message (no colored stripe).
     val borderColor = classification?.let { emergencyBorderColor(it) }
-    // Content is indented right of the border stripe so text never overlaps it.
-    val startPad = if (borderColor != null) 10.dp else 0.dp
+    // Content is indented right of the colored stripe so text never overlaps it.
+    val startPad = if (borderColor != null) 10.dp else 6.dp
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // Draw the 3 dp colored left stripe behind the content.
+            // Thin white outline on every message — gives a card-like separation.
+            .border(width = 0.5.dp, color = Color.White.copy(alpha = 0.18f))
+            // For emergency messages: draw the colored 3 dp left stripe on top of
+            // the white border, so the left side becomes the emergency indicator.
             .then(
                 if (borderColor != null) Modifier.drawBehind {
                     drawRect(
@@ -190,7 +194,7 @@ fun MessageItem(
                     )
                 } else Modifier
             )
-            .padding(start = startPad),
+            .padding(start = startPad, end = 4.dp, top = 2.dp, bottom = 2.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {

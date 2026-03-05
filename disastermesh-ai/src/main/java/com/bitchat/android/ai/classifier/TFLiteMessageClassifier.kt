@@ -47,8 +47,10 @@ class TFLiteMessageClassifier(context: Context) : MessagePriorityClassifier {
     ): ClassificationResult {
         val inputIds = ClassifierUtils.tokenize(messageText, wordIndex, seqLen)
 
-        // TFLite embedding layers expect Int32 input
-        val input  = Array(1) { inputIds }
+        // The model's input tensor is FLOAT32 (confirmed from crash log).
+        // Word IDs are integers, but must be wrapped in a Float array before
+        // being handed to the TFLite interpreter.
+        val input  = Array(1) { FloatArray(seqLen) { i -> inputIds[i].toFloat() } }
         val output = Array(1) { FloatArray(labels.size) }
         interpreter.run(input, output)
 

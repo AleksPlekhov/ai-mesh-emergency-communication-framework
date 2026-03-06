@@ -264,7 +264,7 @@
     <string name="grant_permissions">İzin ver</string>
     <string name="location_tracking_warning">bitchat konumunu takip etmez</string>
     <string name="at_symbol">@</string>
-    <string name="app_brand">bitchat/</string>
+    <string name="app_brand">DisasterMesh/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="geohash_people_header">KİŞİLER</string>
     <string name="nobody_around">yakında kimse yok…</string>

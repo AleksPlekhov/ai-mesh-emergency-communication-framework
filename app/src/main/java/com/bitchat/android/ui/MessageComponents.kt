@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import com.bitchat.android.ui.media.FileMessageItem
 import com.bitchat.android.model.BitchatMessageType
@@ -186,17 +187,18 @@ fun MessageItem(
     val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
 
     // Emergency stripe color — category color for emergencies,
-    // grey for classified-but-no-emergency, null if not yet processed.
-    val borderColor  = classification?.let { emergencyBorderColor(it) }
-    val stripeColor  = borderColor ?: if (classification != null) Color.White.copy(alpha = 0.5f) else null
+    // muted onSurface for classified-but-no-emergency, null if not yet processed.
+    val isDark      = isSystemInDarkTheme()
+    val borderColor  = classification?.let { emergencyBorderColor(it, colorScheme, isDark) }
+    val stripeColor  = borderColor ?: if (classification != null) colorScheme.onSurface.copy(alpha = 0.20f) else null
     // Indent text so it never overlaps the left stripe.
     val startPad = if (stripeColor != null) 12.dp else 4.dp
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            // White outline on every message — gives a card-like separation.
-            .border(width = 1.dp, color = Color.White.copy(alpha = 0.5f))
+            // Subtle outline on every message — adapts to light/dark theme.
+            .border(width = 1.dp, color = colorScheme.onSurface.copy(alpha = 0.20f))
             // Left stripe: category color for emergencies, grey for UNDEFINED.
             .then(
                 if (stripeColor != null) Modifier.drawBehind {
@@ -615,7 +617,7 @@ fun DeliveryStatusIcon(status: DeliveryStatus) {
             Text(
                 text = stringResource(R.string.status_delivered),
                 fontSize = 10.sp,
-                color = Color(0xFF007AFF), // Blue
+                color = colorScheme.primary,   // brand color — green in dark, dark-green in light
                 fontWeight = FontWeight.Bold
             )
         }
@@ -623,7 +625,7 @@ fun DeliveryStatusIcon(status: DeliveryStatus) {
             Text(
                 text = stringResource(R.string.status_failed),
                 fontSize = 10.sp,
-                color = Color.Red.copy(alpha = 0.8f)
+                color = colorScheme.error.copy(alpha = 0.8f)
             )
         }
         is DeliveryStatus.PartiallyDelivered -> {

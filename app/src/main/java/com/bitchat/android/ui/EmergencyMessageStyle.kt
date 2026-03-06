@@ -1,7 +1,9 @@
 package com.bitchat.android.ui
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bitchat.android.ai.classifier.ClassificationResult
 import com.bitchat.android.ai.classifier.MessagePriority
+import androidx.compose.material3.ColorScheme
 
 // ── Confidence threshold ───────────────────────────────────────────────────────
 //
@@ -45,26 +48,32 @@ fun shouldShowEmergencyBadge(classification: ClassificationResult): Boolean = wh
 /**
  * Left-border color for a classified emergency message, or `null` for plain messages.
  *
- * Color palette is designed to be recognisable at a glance on both light and dark themes:
- *  • Warm reds / oranges for life-safety  (MEDICAL, FIRE, COLLAPSE)
- *  • Cool blues / purples for hazards     (FLOOD, SECURITY, WEATHER)
- *  • Earthy tones for logistics           (INFRASTRUCTURE, RESOURCES, MISSING)
+ * All colors are derived from [colorScheme] where a semantic token exists, and from
+ * explicit light/dark-aware values where Material3 has no suitable token.
+ *
+ *  MEDICAL / CRITICAL  → colorScheme.error   (red in both themes)
+ *  RESOURCE_REQUEST    → colorScheme.primary  (brand green matches "resources available")
+ *  FIRE / FLOOD / …    → explicit bright (dark) or muted (light) pair
  */
-fun emergencyBorderColor(classification: ClassificationResult): Color? {
+fun emergencyBorderColor(
+    classification: ClassificationResult,
+    colorScheme: ColorScheme,
+    isDarkTheme: Boolean
+): Color? {
     if (!shouldShowEmergencyBadge(classification)) return null
     return when (classification.emergencyType) {
-        "MEDICAL"          -> Color(0xFFFF3B30)   // iOS red
-        "FIRE"             -> Color(0xFFFF6B35)   // deep orange
-        "COLLAPSE"         -> Color(0xFFB71C1C)   // dark red
-        "FLOOD"            -> Color(0xFF007AFF)   // iOS blue
-        "SECURITY"         -> Color(0xFF9B59B6)   // purple
-        "WEATHER"          -> Color(0xFF00BFA5)   // teal
-        "MISSING_PERSON"   -> Color(0xFFFFB300)   // amber
-        "INFRASTRUCTURE"   -> Color(0xFFE67E22)   // orange-brown
-        "RESOURCE_REQUEST" -> Color(0xFF43A047)   // green
+        "MEDICAL"          -> colorScheme.error
+        "FIRE"             -> if (isDarkTheme) Color(0xFFFF6B35) else Color(0xFFBF360C)
+        "COLLAPSE"         -> if (isDarkTheme) Color(0xFFEF5350) else Color(0xFFB71C1C)
+        "FLOOD"            -> if (isDarkTheme) Color(0xFF42A5F5) else Color(0xFF0D47A1)
+        "SECURITY"         -> if (isDarkTheme) Color(0xFFCE93D8) else Color(0xFF6A1B9A)
+        "WEATHER"          -> if (isDarkTheme) Color(0xFF4DB6AC) else Color(0xFF00695C)
+        "MISSING_PERSON"   -> if (isDarkTheme) Color(0xFFFFD54F) else Color(0xFFF57F17)
+        "INFRASTRUCTURE"   -> if (isDarkTheme) Color(0xFFFFCC80) else Color(0xFFE65100)
+        "RESOURCE_REQUEST" -> colorScheme.primary
         else -> when (classification.priority) {
-            MessagePriority.CRITICAL -> Color(0xFFFF3B30)
-            MessagePriority.HIGH     -> Color(0xFFFF9500)
+            MessagePriority.CRITICAL -> colorScheme.error
+            MessagePriority.HIGH     -> if (isDarkTheme) Color(0xFFFFB74D) else Color(0xFFE65100)
             else                     -> null
         }
     }
@@ -74,20 +83,22 @@ fun emergencyBorderColor(classification: ClassificationResult): Color? {
  * Small one-line badge that appears below every classified message text.
  *
  * • Emergency  → colored emoji badge  e.g.  🏥 MEDICAL · 97%
- * • No match   → dim grey marker          e.g.  · —
+ * • No match   → dim "UNDEFINED" in muted onSurface color
  *
  * Nothing is rendered if [classification] is null (message not yet processed).
  */
 @Composable
 fun EmergencyBadge(classification: ClassificationResult) {
-    val color = emergencyBorderColor(classification)
+    val colorScheme = MaterialTheme.colorScheme
+    val isDark      = isSystemInDarkTheme()
+    val color       = emergencyBorderColor(classification, colorScheme, isDark)
 
     if (color != null) {
         // ── Emergency / warning badge ─────────────────────────────────────
         val (emoji, label) = emojiAndLabel(classification)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 2.dp)
+            modifier = Modifier.padding(top = 2.dp, start = 4.dp)
         ) {
             Text(
                 text = "$emoji $label · ${(classification.confidence * 100).toInt()}%",
@@ -95,20 +106,6 @@ fun EmergencyBadge(classification: ClassificationResult) {
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Medium,
                 color = color
-            )
-        }
-    } else {
-        // ── No-category marker ────────────────────────────────────────────
-        // Message was analysed but no emergency signal was found.
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 2.dp)
-        ) {
-            Text(
-                text = "UNDEFINED",
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = Color.White.copy(alpha = 0.50f)
             )
         }
     }

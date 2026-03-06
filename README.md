@@ -145,7 +145,7 @@ Intelligently manages radio interface switching and node role assignment to maxi
 **Phase 1 — Core AI Framework (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
 - ✅ `:disastermesh-ai` Gradle module — dedicated AI library module, independent of `:app`
-- 🔄 M1: AI Message Priority Classifier — keyword rule-based classifier operational; TFLite model stub ready (drop in `.tflite` asset to activate)
+- ✅ M1: AI Message Priority Classifier — keyword rule-based classifier operational; TFLite model stub ready (drop in `.tflite` asset to activate)
 - ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required), fully implemented in `:disastermesh-ai`
 - 🔄 M3: FEMA ICS-213 Report Generator — automated situation reports compatible with federal emergency standards
 - 🔄 M4: AI Energy Optimizer — adaptive BLE/Wi-Fi switching and intelligent relay node management

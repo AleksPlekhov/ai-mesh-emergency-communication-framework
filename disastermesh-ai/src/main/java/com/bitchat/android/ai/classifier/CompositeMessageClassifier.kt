@@ -1,5 +1,9 @@
 package com.bitchat.android.ai.classifier
 
+import android.util.Log
+
+private const val TAG = "MessageClassifier"
+
 /**
  * Two-stage classifier that combines the precision of keyword matching with
  * the breadth of the TFLite neural classifier.
@@ -33,13 +37,19 @@ internal class CompositeMessageClassifier(
         // we trust it over the neural model — keyword precision is ~100%.
         val kw = keyword.classify(messageText, metadata)
         if (kw.priority == MessagePriority.CRITICAL || kw.priority == MessagePriority.HIGH) {
+            Log.d(TAG, "[KEYWORD] \"${messageText.take(60)}\" → " +
+                    "${kw.priority} / ${kw.emergencyType} / conf=${kw.confidence} / ${kw.reasoning}")
             return kw
         }
 
         // ── Stage 2: TFLite neural classifier ─────────────────────────────
         // Used for messages with no keyword hit; can detect emergencies
         // expressed in natural language beyond the keyword vocabulary.
-        return tflite.classify(messageText, metadata)
+        val tf = tflite.classify(messageText, metadata)
+        Log.d(TAG, "[TFLITE ] \"${messageText.take(60)}\" → " +
+                "${tf.priority} / ${tf.emergencyType} / conf=${
+                    String.format("%.0f", tf.confidence * 100)}% / ${tf.reasoning}")
+        return tf
     }
 
     override fun close() {

@@ -100,17 +100,15 @@ fun EmergencyBadge(classification: ClassificationResult) {
     } else {
         // ── No-category marker ────────────────────────────────────────────
         // Message was analysed but no emergency signal was found.
-        // A subtle "· —" keeps the layout height consistent without
-        // drawing attention away from actual emergencies.
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 2.dp)
         ) {
             Text(
-                text = "· —",
+                text = "UNDEFINED",
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,
-                color = Color.Gray.copy(alpha = 0.45f)
+                color = Color.White.copy(alpha = 0.50f)
             )
         }
     }

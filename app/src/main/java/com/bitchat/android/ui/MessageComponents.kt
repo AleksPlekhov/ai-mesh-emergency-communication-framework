@@ -185,27 +185,28 @@ fun MessageItem(
     val colorScheme = MaterialTheme.colorScheme
     val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
 
-    // Resolve border color — null means plain message (no colored stripe).
-    val borderColor = classification?.let { emergencyBorderColor(it) }
-    // Content is indented right of the colored stripe so text never overlaps it.
-    val startPad = if (borderColor != null) 10.dp else 4.dp
+    // Emergency stripe color — category color for emergencies,
+    // grey for classified-but-no-emergency, null if not yet processed.
+    val borderColor  = classification?.let { emergencyBorderColor(it) }
+    val stripeColor  = borderColor ?: if (classification != null) Color.White.copy(alpha = 0.5f) else null
+    // Indent text so it never overlaps the left stripe.
+    val startPad = if (stripeColor != null) 12.dp else 4.dp
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             // White outline on every message — gives a card-like separation.
             .border(width = 1.dp, color = Color.White.copy(alpha = 0.5f))
-            // For emergency messages: draw the colored 3 dp left stripe on top of
-            // the white border, so the left side becomes the emergency indicator.
+            // Left stripe: category color for emergencies, grey for UNDEFINED.
             .then(
-                if (borderColor != null) Modifier.drawBehind {
+                if (stripeColor != null) Modifier.drawBehind {
                     drawRect(
-                        color = borderColor,
+                        color = stripeColor,
                         size = androidx.compose.ui.geometry.Size(6.dp.toPx(), size.height)
                     )
                 } else Modifier
             )
-            .padding(all = 6.dp),
+            .padding(start = 12.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -549,7 +550,7 @@ fun EmptyMessagesState(
             Text(
                 text = "No messages yet.",
                 fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = colorScheme.onSurface.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center
@@ -557,7 +558,7 @@ fun EmptyMessagesState(
             Text(
                 text = "$connectedPeersCount peers connected.",
                 fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
+                fontSize = 16.sp,
                 color = colorScheme.onSurface.copy(alpha = 0.55f),
                 textAlign = TextAlign.Center
             )
@@ -565,7 +566,7 @@ fun EmptyMessagesState(
             Text(
                 text = "When someone sends a message\nemergencies will be auto-tagged\nand appear in 🚨 Feed.",
                 fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
+                fontSize = 16.sp,
                 color = colorScheme.onSurface.copy(alpha = 0.45f),
                 textAlign = TextAlign.Center,
                 lineHeight = 17.sp
@@ -574,7 +575,7 @@ fun EmptyMessagesState(
             Text(
                 text = "type a message...",
                 fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
+                fontSize = 16.sp,
                 color = colorScheme.onSurface.copy(alpha = 0.30f),
                 textAlign = TextAlign.Center
             )

@@ -65,8 +65,9 @@ The project uses a multi-module Gradle build to cleanly separate AI concerns fro
 :disastermesh-ai            — All AI/ML functionality (self-contained library)
     ├── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
     └── ai/classifier/      — Message priority classification
-          ├── KeywordMessageClassifier   (rule-based, always available)
-          ├── TFLiteMessageClassifier    (TFLite model, activated by dropping .tflite asset)
+          ├── KeywordMessageClassifier   (~90 FEMA/ICS keywords across 9 categories, always available)
+          ├── TFLiteMessageClassifier    (neural model, activated by dropping .tflite asset)
+          ├── CompositeMessageClassifier (keyword-first → TFLite fallback pipeline)
           └── MessageClassifierFactory   (selects best available backend at runtime)
 ```
 
@@ -78,19 +79,44 @@ The `:disastermesh-ai` module is an Android library with no dependency on `:app`
 
 ### M1 — AI Message Priority Classifier
 
-Classifies incoming mesh messages into priority tiers using an on-device TFLite model. In a disaster zone, not all messages are equal — a medical emergency must reach rescue coordinators before routine check-in messages.
+Classifies incoming mesh messages into priority tiers and emergency categories using a two-stage on-device pipeline. In a disaster zone, not all messages are equal — a medical emergency must reach rescue coordinators before routine check-in messages.
 
 **Priority levels:**
 - `CRITICAL` — Medical emergencies, SOS signals, structural collapse reports
-- `HIGH` — Evacuation requests, missing persons, hazard warnings
-- `NORMAL` — General communication, status updates
-- `LOW` — Routine check-ins, test messages
+- `HIGH` — Fire, flood, active security threats
+- `NORMAL` — Infrastructure issues, weather hazards, missing persons, resource requests
+- `LOW` — Routine check-ins, test messages, false alarms
 
-**Technical approach:** Two-tier classifier in `:disastermesh-ai`:
-1. **`KeywordMessageClassifier`** — FEMA/ICS keyword rules (SOS, MAYDAY, EVACUATE, FIRE, FLOOD, etc.), always available with no model assets.
-2. **`TFLiteMessageClassifier`** — Fine-tuned lightweight model (DistilBERT-tiny or MobileBERT) converted to TFLite. Activated automatically when `message_classifier.tflite` is placed in module assets.
+**9 recognised emergency categories:**
 
-`MessageClassifierFactory` selects the best available backend at runtime, ensuring the system degrades gracefully on constrained hardware.
+| Category | Examples |
+|---|---|
+| 🏥 MEDICAL | "need a doctor", "heart attack", "injured", "SOS" |
+| 🏚 COLLAPSE | "building collapsed", "trapped under rubble" |
+| 🔥 FIRE | "fire spreading", "smoke", "evacuate now" |
+| 🌊 FLOOD | "flooding", "water rising", "dam broke" |
+| 🚨 SECURITY | "armed", "shooting", "threat", "danger" |
+| ⛈ WEATHER | "tornado", "hurricane", "storm warning" |
+| 🔍 MISSING PERSON | "can't find my kid", "missing person", "where is my" |
+| 🔧 INFRASTRUCTURE | "power outage", "no water", "bridge down" |
+| 📦 RESOURCES | "need food", "no supplies", "starving" |
+
+**Two-stage classifier pipeline (`CompositeMessageClassifier`):**
+1. **`KeywordMessageClassifier`** — ~90 FEMA/ICS keyword rules run first. If a `CRITICAL` or `HIGH` priority keyword matches, the result is returned immediately with deterministic, high-confidence output.
+2. **`TFLiteMessageClassifier`** — Lightweight neural model (MobileBERT-style) runs as fallback for messages that don't match keywords. Activated automatically when `message_classifier.tflite` is placed in module assets. Confidence threshold: 30%.
+
+`MessageClassifierFactory` selects `CompositeMessageClassifier` (keyword + TFLite) when a model asset is present, or `KeywordMessageClassifier` alone otherwise, ensuring the system degrades gracefully on constrained hardware.
+
+**Real-time visual indicators in the chat UI:**
+- Each classified message shows a **coloured left stripe** matching its category (e.g., red for MEDICAL, orange for FIRE, blue for FLOOD).
+- An **emoji badge** below the message text confirms the detected category and confidence score (e.g., `🏥 MEDICAL · 94%`).
+- Classification runs in the background on `Dispatchers.Default` so TFLite never blocks the UI thread.
+- Results are cached per message ID — each message is classified exactly once.
+
+**Emergency Feed:**
+- A persistent **🚨 button** in the input bar opens the Emergency Feed.
+- The **Emergency Feed sheet** groups all detected emergency messages by category, sorted by priority (CRITICAL → HIGH → NORMAL), with a coloured stripe and message count per category.
+- Tapping a category opens a **full-screen Category View** showing only messages of that type, with system back-button navigation support.
 
 **Why it matters:** Rescue coordinators receiving hundreds of messages simultaneously cannot manually triage. AI prioritization directly reduces response time for life-threatening situations.
 
@@ -145,8 +171,12 @@ Intelligently manages radio interface switching and node role assignment to maxi
 **Phase 1 — Core AI Framework (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
 - ✅ `:disastermesh-ai` Gradle module — dedicated AI library module, independent of `:app`
-- ✅ M1: AI Message Priority Classifier — keyword rule-based classifier operational; TFLite model stub ready (drop in `.tflite` asset to activate)
-- ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required), fully implemented in `:disastermesh-ai`
+- ✅ M1: Keyword classifier — ~90 FEMA/ICS keyword rules across 9 emergency categories
+- ✅ M1: TFLite classifier — neural model stub ready (drop in `.tflite` asset to activate)
+- ✅ M1: `CompositeMessageClassifier` — keyword-first, TFLite fallback two-stage pipeline
+- ✅ M1: Real-time visual indicators — category-coloured left stripes and emoji badges on every classified message; theme-aware (Material3 light/dark)
+- ✅ M1: Emergency Feed — always-visible feed button opens a priority-sorted category sheet; category detail view shows filtered messages with system back navigation
+- ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
 - 🔄 M3: FEMA ICS-213 Report Generator — automated situation reports compatible with federal emergency standards
 - 🔄 M4: AI Energy Optimizer — adaptive BLE/Wi-Fi switching and intelligent relay node management
 
@@ -182,7 +212,7 @@ This framework addresses priorities identified by multiple U.S. federal initiati
 | UI Framework | Jetpack Compose + Material Design 3 | `:app` |
 | AI/ML Runtime | TensorFlow Lite 2.14 | `:disastermesh-ai` |
 | Speech Recognition | Vosk Android 0.3.47 (offline) | `:disastermesh-ai` |
-| Message Classifier | Keyword rules + TFLite model | `:disastermesh-ai` |
+| Message Classifier | Composite pipeline: keyword rules + TFLite model | `:disastermesh-ai` |
 | Mesh Transport | Bluetooth Low Energy (BLE) | `:app` |
 | Encryption | Noise Protocol Framework | `:app` |
 | Mesh Routing | Multi-hop flood routing with Bloom Filter deduplication | `:app` |

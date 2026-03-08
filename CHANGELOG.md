@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+
+
+
+# Changelog — DisasterMesh
+
+## [0.1.0] - 2026-03-01  ← your first entry
+### Added
+- Emergency Feed bottom sheet
+- AI-powered message classification
+  ...
+
+---
+## Upstream BitChat history (archived)
 ## [1.4.0] - 2025-10-15
 ### Fixed
 - fix: Resolve debug settings bottom sheet crash on some devices (Issue #472)

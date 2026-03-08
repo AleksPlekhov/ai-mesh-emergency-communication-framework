@@ -8,13 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # Changelog — DisasterMesh
 
-## [0.1.0] - 2026-03-01  ← your first entry
-### Added
-- Emergency Feed bottom sheet
-- AI-powered message classification
-  ...
+## [0.1.0] - 2026-03-08
 
----
+### Added
+- `:disastermesh-ai` Gradle library module — all AI/ML code extracted from `:app`, independently testable
+- `KeywordMessageClassifier` — ~90 FEMA/ICS keyword rules across 9 emergency categories (MEDICAL, FIRE, FLOOD, COLLAPSE, SECURITY, WEATHER, MISSING_PERSON, INFRASTRUCTURE, RESOURCE_REQUEST)
+- `TFLiteMessageClassifier` — on-device neural classifier; auto-activates when `message_classifier.tflite` asset is present
+- `CompositeMessageClassifier` — keyword-first pipeline with TFLite fallback; keyword results bypass confidence threshold for CRITICAL/HIGH priority
+- Coloured left stripe and emoji badge on every classified message (e.g. `🏥 MEDICAL · 94%`); all colours derived from `MaterialTheme.colorScheme` for light/dark theme support
+- Emergency Feed button (`⚠️`) always visible left of the text input field
+- `EmergencyFeedSheet` — categories sorted by priority with coloured stripes, message counts, and a close button
+- `CategoryMessagesScreen` — full-screen slide-in view filtered to one emergency category; system back button supported via `BackHandler`
+- `EmptyMessagesState` — placeholder shown when the message list is empty
+- Offline speech-to-text (`VoskTranscribeButton`) integrated into the chat input bar
+
+----------------------------------------------------------
+----------------------------------------------------------
+
 ## Upstream BitChat history (archived)
 ## [1.4.0] - 2025-10-15
 ### Fixed

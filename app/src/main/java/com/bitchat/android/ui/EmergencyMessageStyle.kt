@@ -111,6 +111,45 @@ fun EmergencyBadge(classification: ClassificationResult) {
     }
 }
 
+/**
+ * Returns the stripe/badge color for a known emergency type string.
+ * Mirrors the logic in [emergencyBorderColor] but works with a raw type string.
+ * Used by [EmergencyFeedSheet] which groups results by type.
+ */
+fun categoryBorderColor(
+    emergencyType: String,
+    colorScheme: ColorScheme,
+    isDarkTheme: Boolean
+): Color = when (emergencyType) {
+    "MEDICAL"          -> colorScheme.error
+    "FIRE"             -> if (isDarkTheme) Color(0xFFFF6B35) else Color(0xFFBF360C)
+    "COLLAPSE"         -> if (isDarkTheme) Color(0xFFEF5350) else Color(0xFFB71C1C)
+    "FLOOD"            -> if (isDarkTheme) Color(0xFF42A5F5) else Color(0xFF0D47A1)
+    "SECURITY"         -> if (isDarkTheme) Color(0xFFCE93D8) else Color(0xFF6A1B9A)
+    "WEATHER"          -> if (isDarkTheme) Color(0xFF4DB6AC) else Color(0xFF00695C)
+    "MISSING_PERSON"   -> if (isDarkTheme) Color(0xFFFFD54F) else Color(0xFFF57F17)
+    "INFRASTRUCTURE"   -> if (isDarkTheme) Color(0xFFFFCC80) else Color(0xFFE65100)
+    "RESOURCE_REQUEST" -> colorScheme.primary
+    else               -> colorScheme.error
+}
+
+/**
+ * Maps an emergency type string to its display emoji and short label.
+ * Used by [EmergencyFeedSheet] and other views that know the type but not the full result.
+ */
+fun categoryEmojiAndLabel(emergencyType: String): Pair<String, String> = when (emergencyType) {
+    "MEDICAL"          -> "🏥" to "MEDICAL"
+    "FIRE"             -> "🔥" to "FIRE"
+    "FLOOD"            -> "🌊" to "FLOOD"
+    "COLLAPSE"         -> "🏚" to "COLLAPSE"
+    "SECURITY"         -> "🚨" to "SECURITY"
+    "WEATHER"          -> "⛈" to "WEATHER"
+    "MISSING_PERSON"   -> "🔍" to "MISSING PERSON"
+    "INFRASTRUCTURE"   -> "🔧" to "INFRASTRUCTURE"
+    "RESOURCE_REQUEST" -> "📦" to "RESOURCES"
+    else               -> "⚠️" to emergencyType
+}
+
 /** Maps a [ClassificationResult] to its display emoji and short label. */
 private fun emojiAndLabel(classification: ClassificationResult): Pair<String, String> =
     when (classification.emergencyType) {

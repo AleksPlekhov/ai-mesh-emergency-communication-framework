@@ -75,15 +75,16 @@ fun MessagesList(
     onNicknameClick: ((String) -> Unit)? = null,
     onMessageLongPress: ((BitchatMessage) -> Unit)? = null,
     onCancelTransfer: ((BitchatMessage) -> Unit)? = null,
-    onImageClick: ((String, List<String>, Int) -> Unit)? = null
+    onImageClick: ((String, List<String>, Int) -> Unit)? = null,
+    // Classification cache is owned by the caller (ChatScreen) so other
+    // composables (EmergencyFeedSheet, CategoryMessagesScreen) can read it.
+    classificationCache: androidx.compose.runtime.snapshots.SnapshotStateMap<String, ClassificationResult> =
+        remember { mutableStateMapOf() }
 ) {
     // ── Emergency classifier ───────────────────────────────────────────────
     val context = LocalContext.current
     // One classifier per composition tree — reused across recompositions.
     val classifier = remember { MessageClassifierFactory.create(context) }
-    // Persistent cache: message.id → ClassificationResult.
-    // We never re-classify an already-seen message (content can't change).
-    val classificationCache = remember { mutableStateMapOf<String, ClassificationResult>() }
     // Classify each new text message in the background so TFLite doesn't block the UI thread.
     LaunchedEffect(messages.size) {
         messages.forEach { msg ->

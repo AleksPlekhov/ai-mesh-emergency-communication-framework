@@ -26,6 +26,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bitchat.android.model.BitchatMessage
 import com.bitchat.android.ui.media.FullScreenImageViewer
+import com.bitchat.android.ai.classifier.ClassificationResult
 
 /**
  * Main ChatScreen - REFACTORED to use component-based architecture
@@ -74,6 +75,11 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var initialViewerIndex by remember { mutableStateOf(0) }
     var forceScrollToBottom by remember { mutableStateOf(false) }
     var isScrolledUp by remember { mutableStateOf(false) }
+
+    // Emergency Feed state
+    val classificationCache = remember { mutableStateMapOf<String, ClassificationResult>() }
+    var showEmergencyFeed by remember { mutableStateOf(false) }
+    var selectedFeedCategory by remember { mutableStateOf<String?>(null) }
 
     // Show password dialog when needed
     LaunchedEffect(showPasswordPrompt) {
@@ -138,6 +144,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 connectedPeersCount = connectedPeers.size,
                 forceScrollToBottom = forceScrollToBottom,
                 onScrolledUpChanged = { isUp -> isScrolledUp = isUp },
+                classificationCache = classificationCache,
                 onNicknameClick = { fullSenderName ->
                     // Single click - mention user in text input
                     val currentText = messageText.text
@@ -192,6 +199,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     }
 
     ChatInputSection(
+        onEmergencyFeedClick = { showEmergencyFeed = true },
         messageText = messageText,
         onMessageTextChange = { newText: TextFieldValue ->
             messageText = newText
@@ -296,6 +304,31 @@ fun ChatScreen(viewModel: ChatViewModel) {
         }
     }
 
+    // Emergency Feed bottom sheet — lists active categories sorted by priority
+    if (showEmergencyFeed) {
+        EmergencyFeedSheet(
+            classificationCache = classificationCache,
+            messages = displayMessages,
+            onDismiss = { showEmergencyFeed = false },
+            onCategorySelected = { category ->
+                selectedFeedCategory = category
+                showEmergencyFeed = false
+            }
+        )
+    }
+
+    // Category detail — full-screen slide-in overlay filtered to one category
+    selectedFeedCategory?.let { category ->
+        CategoryMessagesScreen(
+            category = category,
+            messages = displayMessages,
+            classificationCache = classificationCache,
+            currentUserNickname = nickname,
+            meshService = viewModel.meshService,
+            onBack = { selectedFeedCategory = null }
+        )
+    }
+
     // Full-screen image viewer - separate from other sheets to allow image browsing without navigation
     if (showFullScreenImageViewer) {
         FullScreenImageViewer(
@@ -349,6 +382,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
 @Composable
 fun ChatInputSection(
+    onEmergencyFeedClick: () -> Unit = {},
     messageText: TextFieldValue,
     onMessageTextChange: (TextFieldValue) -> Unit,
     onSend: () -> Unit,
@@ -402,6 +436,7 @@ fun ChatInputSection(
                 currentChannel = currentChannel,
                 nickname = nickname,
                 showMediaButtons = showMediaButtons,
+                onEmergencyFeedClick = onEmergencyFeedClick,
                 modifier = Modifier.fillMaxWidth()
             )
         }

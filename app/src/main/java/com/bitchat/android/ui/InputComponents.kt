@@ -172,6 +172,7 @@ fun MessageInput(
     currentChannel: String?,
     nickname: String,
     showMediaButtons: Boolean,
+    onEmergencyFeedClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -188,6 +189,19 @@ fun MessageInput(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // ── Emergency Feed button (always visible, left of the text field) ─────
+        IconButton(
+            onClick = onEmergencyFeedClick,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = "Emergency Feed",
+                tint = colorScheme.error,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
         // Text input with placeholder OR visualizer when recording
         Box(
             modifier = Modifier.weight(1f)

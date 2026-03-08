@@ -226,7 +226,9 @@ fun ChatHeaderContent(
     onTripleClick: () -> Unit,
     onShowAppInfo: () -> Unit,
     onLocationChannelsClick: () -> Unit,
-    onLocationNotesClick: () -> Unit
+    onLocationNotesClick: () -> Unit,
+    emergencyCount: Int = 0,
+    onEmergencyFeedClick: () -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -250,7 +252,9 @@ fun ChatHeaderContent(
                 onSidebarClick = onSidebarClick,
                 onLocationChannelsClick = onLocationChannelsClick,
                 onLocationNotesClick = onLocationNotesClick,
-                viewModel = viewModel
+                viewModel = viewModel,
+                emergencyCount = emergencyCount,
+                onEmergencyFeedClick = onEmergencyFeedClick
             )
         }
     }
@@ -331,7 +335,9 @@ private fun MainHeader(
     onSidebarClick: () -> Unit,
     onLocationChannelsClick: () -> Unit,
     onLocationNotesClick: () -> Unit,
-    viewModel: ChatViewModel
+    viewModel: ChatViewModel,
+    emergencyCount: Int = 0,
+    onEmergencyFeedClick: () -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val connectedPeers by viewModel.connectedPeers.collectAsStateWithLifecycle()
@@ -356,17 +362,19 @@ private fun MainHeader(
             modifier = Modifier.fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.app_brand),
-                style = MaterialTheme.typography.headlineSmall,
-                color = colorScheme.primary,
-                modifier = Modifier.singleOrTripleClickable(
-                    onSingleClick = onTitleClick,
-                    onTripleClick = onTripleTitleClick
-                )
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.app_brand),
+                tint = colorScheme.primary,
+                modifier = Modifier
+                    .size(22.dp)
+                    .singleOrTripleClickable(
+                        onSingleClick = onTitleClick,
+                        onTripleClick = onTripleTitleClick
+                    )
             )
-            
-            Spacer(modifier = Modifier.width(2.dp))
+
+            Spacer(modifier = Modifier.width(6.dp))
             
             NicknameEditor(
                 value = nickname,
@@ -452,6 +460,29 @@ private fun MainHeader(
                 geohashPeople = geohashPeople,
                 onClick = onSidebarClick
             )
+
+            // Emergency Feed badge — always visible, shows count when > 0
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable(onClick = onEmergencyFeedClick)
+                    .padding(horizontal = 4.dp)
+            ) {
+                Text(
+                    text = "🚨",
+                    fontSize = 16.sp
+                )
+                if (emergencyCount > 0) {
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = "$emergencyCount",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
     }
 }

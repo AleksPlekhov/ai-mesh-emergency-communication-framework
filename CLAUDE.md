@@ -271,6 +271,9 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 3. Verify permission requirements for new features
 4. Test with both BLE enabled and disabled
 
+### After Making Changes
+1. Update ChangeLog file with made changes
+
 ### Code Style
 - Kotlin official conventions
 - Compose: hoist state, use `remember` judiciously

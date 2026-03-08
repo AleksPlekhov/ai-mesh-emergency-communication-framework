@@ -79,7 +79,9 @@ fun MessagesList(
     // Classification cache is owned by the caller (ChatScreen) so other
     // composables (EmergencyFeedSheet, CategoryMessagesScreen) can read it.
     classificationCache: androidx.compose.runtime.snapshots.SnapshotStateMap<String, ClassificationResult> =
-        remember { mutableStateMapOf() }
+        remember { mutableStateMapOf() },
+    // When non-null, the list will animate-scroll to the message with this ID.
+    scrollToMessageId: String? = null
 ) {
     // ── Emergency classifier ───────────────────────────────────────────────
     val context = LocalContext.current
@@ -144,7 +146,17 @@ fun MessagesList(
             listState.scrollToItem(0)
         }
     }
-    
+
+    // Scroll to a specific message (e.g., tapped from Emergency Feed category view).
+    // messages.asReversed() mirrors the LazyColumn order so indexOfFirst gives the item index.
+    LaunchedEffect(scrollToMessageId) {
+        val id = scrollToMessageId ?: return@LaunchedEffect
+        val index = messages.asReversed().indexOfFirst { it.id == id }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+        }
+    }
+
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),

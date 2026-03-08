@@ -6,6 +6,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
@@ -17,7 +20,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bitchat.android.ai.classifier.ClassificationResult
-import com.bitchat.android.core.ui.component.sheet.BitchatBottomSheet
 import com.bitchat.android.model.BitchatMessage
 
 /** Priority sort order for the Emergency Feed sheet. */
@@ -35,6 +37,7 @@ private val CATEGORY_ORDER = listOf(
  *  • Emoji + category label.
  *  • Message count (right-aligned).
  *
+ * A close (✕) button sits in the top-right corner.
  * Tapping a row calls [onCategorySelected] and dismisses the sheet.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +50,7 @@ fun EmergencyFeedSheet(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Derive the active categories from the cache: only entries that crossed the badge threshold.
     val countByCategory: Map<String, Int> = remember(classificationCache.size) {
@@ -64,22 +68,41 @@ fun EmergencyFeedSheet(
             }
     }
 
-    BitchatBottomSheet(
-        onDismissRequest = onDismiss
+    // Use ModalBottomSheet directly so we can set a surface-elevated container color
+    // that is visually distinct from the chat background.
+    ModalBottomSheet(
+        modifier = Modifier.statusBarsPadding(),
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = null,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = colorScheme.surfaceVariant,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
-            // ── Title bar ─────────────────────────────────────────────────
-            Text(
-                text = "🚨 Emergency Feed",
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = colorScheme.onBackground,
+            // ── Title bar with close button ────────────────────────────────
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-            )
+                    .padding(start = 24.dp, end = 8.dp, top = 16.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "🚨 Emergency Feed",
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = colorScheme.onSurface
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close",
+                        tint = colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
 
             HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.3f))
 
@@ -114,7 +137,7 @@ fun EmergencyFeedSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onCategorySelected(category) }
-                                .padding(vertical = 12.dp, horizontal = 0.dp),
+                                .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Coloured left stripe

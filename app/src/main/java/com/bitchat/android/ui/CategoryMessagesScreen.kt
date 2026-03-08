@@ -1,5 +1,6 @@
 package com.bitchat.android.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -39,6 +40,9 @@ fun CategoryMessagesScreen(
     meshService: BluetoothMeshService,
     onBack: () -> Unit
 ) {
+    // Intercept the system back button so it navigates back instead of exiting the app.
+    BackHandler(enabled = true, onBack = onBack)
+
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
     val stripeColor = categoryBorderColor(category, colorScheme, isDark)

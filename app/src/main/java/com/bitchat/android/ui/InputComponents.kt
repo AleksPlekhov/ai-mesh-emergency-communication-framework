@@ -194,11 +194,9 @@ fun MessageInput(
             onClick = onEmergencyFeedClick,
             modifier = Modifier.size(32.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = "Emergency Feed",
-                tint = colorScheme.error,
-                modifier = Modifier.size(20.dp)
+            Text(
+                text = "🚨",
+                fontSize = 18.sp
             )
         }
 

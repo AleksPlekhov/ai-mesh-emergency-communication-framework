@@ -252,7 +252,20 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 
 ## 11. Contributing Guidelines
 
-### Before Making Changes]
+### Git Workflow (MANDATORY)
+
+> These rules apply to every task, no exceptions.
+
+**Branch naming — always create a new branch from develop before touching any code:**
+- New feature → `git checkout -b feature/short-description`
+- Bug fix → `git checkout -b fix/short-description`
+
+**Commits — NEVER commit on behalf of the user:**
+- After completing work, leave all changes **uncommitted**.
+- The user reviews the diff and commits manually.
+- Do not run `git add`, `git commit`, or `git push` at the end of a task.
+
+### Before Making Changes
 1. Read relevant `docs/*.md` files
 2. Check `AGENTS.md` for architectural constraints
 3. Verify permission requirements for new features
@@ -279,4 +292,4 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 
 ---
 
-*Last updated: March 2026*
+*Last updated: March 2026 — added Git workflow rules (branch naming + no auto-commits)*

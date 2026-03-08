@@ -80,6 +80,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val classificationCache = remember { mutableStateMapOf<String, ClassificationResult>() }
     var showEmergencyFeed by remember { mutableStateOf(false) }
     var selectedFeedCategory by remember { mutableStateOf<String?>(null) }
+    var scrollToMessageId by remember { mutableStateOf<String?>(null) }
+    val emergencyCount = remember(classificationCache.size) {
+        classificationCache.values.count { shouldShowEmergencyBadge(it) }
+    }
 
     // Show password dialog when needed
     LaunchedEffect(showPasswordPrompt) {
@@ -145,6 +149,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 forceScrollToBottom = forceScrollToBottom,
                 onScrolledUpChanged = { isUp -> isScrolledUp = isUp },
                 classificationCache = classificationCache,
+                scrollToMessageId = scrollToMessageId,
                 onNicknameClick = { fullSenderName ->
                     // Single click - mention user in text input
                     val currentText = messageText.text
@@ -199,7 +204,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
     }
 
     ChatInputSection(
-        onEmergencyFeedClick = { showEmergencyFeed = true },
         messageText = messageText,
         onMessageTextChange = { newText: TextFieldValue ->
             messageText = newText
@@ -261,7 +265,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
             onShowAppInfo = { viewModel.showAppInfo() },
             onPanicClear = { viewModel.panicClearAllData() },
             onLocationChannelsClick = { showLocationChannelsSheet = true },
-            onLocationNotesClick = { showLocationNotesSheet = true }
+            onLocationNotesClick = { showLocationNotesSheet = true },
+            emergencyCount = emergencyCount,
+            onEmergencyFeedClick = { showEmergencyFeed = true }
         )
 
         // Divider under header - positioned after status bar + header height
@@ -325,7 +331,11 @@ fun ChatScreen(viewModel: ChatViewModel) {
             classificationCache = classificationCache,
             currentUserNickname = nickname,
             meshService = viewModel.meshService,
-            onBack = { selectedFeedCategory = null }
+            onBack = { selectedFeedCategory = null },
+            onMessageClick = { msg ->
+                selectedFeedCategory = null
+                scrollToMessageId = msg.id
+            }
         )
     }
 
@@ -382,7 +392,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
 @Composable
 fun ChatInputSection(
-    onEmergencyFeedClick: () -> Unit = {},
     messageText: TextFieldValue,
     onMessageTextChange: (TextFieldValue) -> Unit,
     onSend: () -> Unit,
@@ -436,7 +445,6 @@ fun ChatInputSection(
                 currentChannel = currentChannel,
                 nickname = nickname,
                 showMediaButtons = showMediaButtons,
-                onEmergencyFeedClick = onEmergencyFeedClick,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -455,7 +463,9 @@ private fun ChatFloatingHeader(
     onShowAppInfo: () -> Unit,
     onPanicClear: () -> Unit,
     onLocationChannelsClick: () -> Unit,
-    onLocationNotesClick: () -> Unit
+    onLocationNotesClick: () -> Unit,
+    emergencyCount: Int = 0,
+    onEmergencyFeedClick: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val locationManager = remember { com.bitchat.android.geohash.LocationChannelManager.getInstance(context) }
@@ -488,7 +498,9 @@ private fun ChatFloatingHeader(
                         // Ensure location is loaded before showing sheet
                         locationManager.refreshChannels()
                         onLocationNotesClick()
-                    }
+                    },
+                    emergencyCount = emergencyCount,
+                    onEmergencyFeedClick = onEmergencyFeedClick
                 )
             },
             colors = TopAppBarDefaults.topAppBarColors(

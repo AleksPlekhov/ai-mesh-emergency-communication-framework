@@ -3,6 +3,7 @@ package com.bitchat.android.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,9 +28,10 @@ import com.bitchat.android.model.BitchatMessage
 /**
  * Full-screen overlay that shows only messages belonging to a single emergency category.
  *
- * Slides in from the right when shown, slides out to the right when [onBack] is called.
- * Renders on top of the entire [ChatScreen] content because it is placed after the outer
- * Box in the composable tree and fills the available size.
+ * Slides in from the right; system back button navigates back via [BackHandler].
+ *
+ * @param onMessageClick When provided, tapping a message dismisses the overlay and jumps to
+ *                       that message in the main chat. If null, messages are not tappable.
  */
 @Composable
 fun CategoryMessagesScreen(
@@ -38,7 +40,8 @@ fun CategoryMessagesScreen(
     classificationCache: SnapshotStateMap<String, ClassificationResult>,
     currentUserNickname: String,
     meshService: BluetoothMeshService,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onMessageClick: ((BitchatMessage) -> Unit)? = null
 ) {
     // Intercept the system back button so it navigates back instead of exiting the app.
     BackHandler(enabled = true, onBack = onBack)
@@ -120,13 +123,23 @@ fun CategoryMessagesScreen(
                         items = filteredMessages.asReversed(),
                         key = { it.id }
                     ) { message ->
-                        MessageItem(
-                            message = message,
-                            messages = filteredMessages,
-                            currentUserNickname = currentUserNickname,
-                            meshService = meshService,
-                            classification = classificationCache[message.id]
-                        )
+                        Box {
+                            MessageItem(
+                                message = message,
+                                messages = filteredMessages,
+                                currentUserNickname = currentUserNickname,
+                                meshService = meshService,
+                                classification = classificationCache[message.id]
+                            )
+                            // Transparent overlay captures taps to jump to the message.
+                            if (onMessageClick != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable { onMessageClick(message) }
+                                )
+                            }
+                        }
                     }
                 }
             }

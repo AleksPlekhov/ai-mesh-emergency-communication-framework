@@ -16,11 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `TFLiteMessageClassifier` — on-device neural classifier; auto-activates when `message_classifier.tflite` asset is present
 - `CompositeMessageClassifier` — keyword-first pipeline with TFLite fallback; keyword results bypass confidence threshold for CRITICAL/HIGH priority
 - Coloured left stripe and emoji badge on every classified message (e.g. `🏥 MEDICAL · 94%`); all colours derived from `MaterialTheme.colorScheme` for light/dark theme support
-- Emergency Feed button (`⚠️`) always visible left of the text input field
 - `EmergencyFeedSheet` — categories sorted by priority with coloured stripes, message counts, and a close button
 - `CategoryMessagesScreen` — full-screen slide-in view filtered to one emergency category; system back button supported via `BackHandler`
 - `EmptyMessagesState` — placeholder shown when the message list is empty
 - Offline speech-to-text (`VoskTranscribeButton`) integrated into the chat input bar
+- Emergency Feed 🚨 button moved to the header, right of the peer counter; shows live emergency message count (`👥 2  🚨 3`) for ambient situational awareness
+- Tap any message in `CategoryMessagesScreen` to dismiss the overlay and jump to that message in the main chat
 
 ----------------------------------------------------------
 ----------------------------------------------------------

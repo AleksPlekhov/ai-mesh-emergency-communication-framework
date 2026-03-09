@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.bitchat.android.ai.classifier.ClassificationResult
+import com.bitchat.android.ai.emergency.categoryEmojiAndLabel
+import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
 import com.bitchat.android.mesh.BluetoothMeshService
 import com.bitchat.android.model.BitchatMessage
 

@@ -16,34 +16,8 @@ import androidx.compose.ui.unit.sp
 import com.bitchat.android.ai.classifier.ClassificationResult
 import com.bitchat.android.ai.classifier.MessagePriority
 import androidx.compose.material3.ColorScheme
-
-// ── Confidence threshold ───────────────────────────────────────────────────────
-//
-//  For the TFLite classifier every message gets one of 9 categories.  Random
-//  chance is ~11 %.  We show a badge when the model is at least 2.7× more
-//  confident than chance (30 %), catching real emergencies while still
-//  filtering out clearly random noise.
-//
-//  CRITICAL / HIGH priority always bypass this check (see shouldShowEmergencyBadge)
-//  so well-known categories (MEDICAL, FIRE, FLOOD, SECURITY) show regardless.
-//
-//  For the keyword classifier the confidence is hardcoded (0.95 / 0.85) and the
-//  emergencyType is always set, so they always pass.
-//
-private const val CONFIDENCE_THRESHOLD = 0.30f
-
-/**
- * Returns true when this result should render a colored border + badge.
- *
- *  • TFLite path  — specific emergencyType + confidence ≥ threshold
- *  • Keyword path — CRITICAL or HIGH priority (keyword was matched)
- */
-fun shouldShowEmergencyBadge(classification: ClassificationResult): Boolean = when {
-    classification.emergencyType.isNotEmpty() && classification.confidence >= CONFIDENCE_THRESHOLD -> true
-    classification.priority == MessagePriority.CRITICAL -> true
-    classification.priority == MessagePriority.HIGH     -> true
-    else                                                -> false
-}
+import com.bitchat.android.ai.emergency.categoryEmojiAndLabel
+import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
 
 /**
  * Left-border color for a classified emergency message, or `null` for plain messages.
@@ -131,23 +105,6 @@ fun categoryBorderColor(
     "INFRASTRUCTURE"   -> if (isDarkTheme) Color(0xFFFFCC80) else Color(0xFFE65100)
     "RESOURCE_REQUEST" -> colorScheme.primary
     else               -> colorScheme.error
-}
-
-/**
- * Maps an emergency type string to its display emoji and short label.
- * Used by [EmergencyFeedSheet] and other views that know the type but not the full result.
- */
-fun categoryEmojiAndLabel(emergencyType: String): Pair<String, String> = when (emergencyType) {
-    "MEDICAL"          -> "🏥" to "MEDICAL"
-    "FIRE"             -> "🔥" to "FIRE"
-    "FLOOD"            -> "🌊" to "FLOOD"
-    "COLLAPSE"         -> "🏚" to "COLLAPSE"
-    "SECURITY"         -> "🚨" to "SECURITY"
-    "WEATHER"          -> "⛈" to "WEATHER"
-    "MISSING_PERSON"   -> "🔍" to "MISSING PERSON"
-    "INFRASTRUCTURE"   -> "🔧" to "INFRASTRUCTURE"
-    "RESOURCE_REQUEST" -> "📦" to "RESOURCES"
-    else               -> "⚠️" to emergencyType
 }
 
 /** Maps a [ClassificationResult] to its display emoji and short label. */

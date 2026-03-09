@@ -14,13 +14,23 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bitchat.android.ai.classifier.ClassificationResult
+import com.bitchat.android.ai.emergency.categoryEmojiAndLabel
+import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
+import com.bitchat.android.ai.report.ICS213Category
+import com.bitchat.android.ai.report.ICS213Message
+import com.bitchat.android.ai.report.ICS213ReportData
 import com.bitchat.android.model.BitchatMessage
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /** Priority sort order for the Emergency Feed sheet. */
 private val CATEGORY_ORDER = listOf(
@@ -45,8 +55,12 @@ private val CATEGORY_ORDER = listOf(
 fun EmergencyFeedSheet(
     classificationCache: SnapshotStateMap<String, ClassificationResult>,
     messages: List<BitchatMessage>,
+    currentUserNickname: String,
+    peersConnected: Int,
+    currentChannel: String,
     onDismiss: () -> Unit,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
+    onGenerateReport: (ICS213ReportData) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
@@ -178,8 +192,99 @@ fun EmergencyFeedSheet(
                 }
             }
 
+            // ── Generate ICS-213 Report button (only when there are incidents) ──
+            if (sortedCategories.isNotEmpty()) {
+                HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.3f))
+                Button(
+                    onClick = {
+                        val reportData = buildReportData(
+                            sortedCategories = sortedCategories,
+                            messages = messages,
+                            classificationCache = classificationCache,
+                            currentUserNickname = currentUserNickname,
+                            peersConnected = peersConnected,
+                            currentChannel = currentChannel
+                        )
+                        onGenerateReport(reportData)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00FF41),
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "GENERATE ICS-213 REPORT",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+
             // Bottom spacer so content isn't hidden behind navigation bar
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+// ── Private helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Builds an [ICS213ReportData] from the Feed's current state.
+ * Called on the button tap — data is snapshotted at that moment.
+ */
+private fun buildReportData(
+    sortedCategories: List<String>,
+    messages: List<BitchatMessage>,
+    classificationCache: Map<String, ClassificationResult>,
+    currentUserNickname: String,
+    peersConnected: Int,
+    currentChannel: String
+): ICS213ReportData {
+    val now = Date()
+    val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val timeFmt = SimpleDateFormat("HH:mm", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val tsFmt = SimpleDateFormat("HH:mm:ss", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+
+    val categories = sortedCategories.map { cat ->
+        val (emoji, label) = categoryEmojiAndLabel(cat)
+        val catMessages = messages.filter { msg ->
+            val result = classificationCache[msg.id] ?: return@filter false
+            result.emergencyType == cat && shouldShowEmergencyBadge(result)
+        }
+        ICS213Category(
+            name = label,
+            emoji = emoji,
+            messages = catMessages.map { msg ->
+                val confidence = classificationCache[msg.id]?.confidence ?: 0f
+                ICS213Message(
+                    sender = msg.sender,
+                    timestamp = tsFmt.format(msg.timestamp),
+                    text = if (msg.content.length > 120) msg.content.take(120) + "…"
+                           else msg.content,
+                    confidencePct = (confidence * 100).toInt()
+                )
+            }
+        )
+    }
+
+    return ICS213ReportData(
+        from = "@$currentUserNickname · $currentChannel",
+        date = dateFmt.format(now),
+        time = timeFmt.format(now) + " UTC",
+        peersConnected = peersConnected,
+        channel = currentChannel,
+        classifierVersion = "CompositeClassifier v1.0",
+        categories = categories
+    )
 }

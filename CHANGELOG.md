@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Offline speech-to-text (`VoskTranscribeButton`) integrated into the chat input bar
 - Emergency Feed 🚨 button moved to the header, right of the peer counter; shows live emergency message count (`👥 2  🚨 3`) for ambient situational awareness
 - Tap any message in `CategoryMessagesScreen` to dismiss the overlay and jump to that message in the main chat
+- `ICS213ReportData` + `ICS213ReportGenerator` — FEMA ICS-213 General Message form rendered as self-contained HTML; pure Kotlin, no Android deps, unit-testable in `:disastermesh-ai`
+- `ICS213PrintHelper` — loads report into a headless `WebView` and triggers Android `PrintManager` (Save as PDF / physical printer)
+- `ICS213ReportScreen` — full-screen Compose preview with black/green header and Share button; white background for print legibility
+- "GENERATE ICS-213 REPORT" button pinned at the bottom of `EmergencyFeedSheet`; hidden when the Feed is empty
 
 ----------------------------------------------------------
 ----------------------------------------------------------

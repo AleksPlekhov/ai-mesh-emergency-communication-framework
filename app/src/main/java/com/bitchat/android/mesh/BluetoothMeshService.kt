@@ -698,11 +698,21 @@ class BluetoothMeshService(private val context: Context) {
     }
     
     /**
-     * Send public message
+     * Send public message.
+     *
+     * The message content is classified synchronously by the keyword classifier
+     * (instant, no ML) so the resulting [RoutedPacket] carries the correct
+     * priority before it enters the broadcaster's priority queue.
      */
     fun sendMessage(content: String, mentions: List<String> = emptyList(), channel: String? = null) {
         if (content.isEmpty()) return
-        
+
+        // Classify synchronously — KeywordMessageClassifier is pure regex, < 1 µs.
+        val urgency = com.bitchat.android.ai.classifier.KeywordMessageClassifier()
+            .classify(content)
+            .priority
+            .ordinal   // CRITICAL=0, HIGH=1, NORMAL=2, LOW=3
+
         serviceScope.launch {
             val packet = BitchatPacket(
                 version = 1u,
@@ -717,7 +727,7 @@ class BluetoothMeshService(private val context: Context) {
 
             // Sign the packet before broadcasting
             val signedPacket = signPacketBeforeBroadcast(packet)
-            connectionManager.broadcastPacket(RoutedPacket(signedPacket))
+            connectionManager.broadcastPacket(RoutedPacket(signedPacket, priority = urgency))
             // Track our own broadcast message for sync
             try { gossipSyncManager.onPublicPacketSeen(signedPacket) } catch (_: Exception) { }
         }

@@ -27,6 +27,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bitchat.android.model.BitchatMessage
 import com.bitchat.android.ui.media.FullScreenImageViewer
 import com.bitchat.android.ai.classifier.ClassificationResult
+import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
+import com.bitchat.android.ai.report.ICS213ReportData
+import com.bitchat.android.report.ICS213ReportScreen
 
 /**
  * Main ChatScreen - REFACTORED to use component-based architecture
@@ -81,6 +84,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var showEmergencyFeed by remember { mutableStateOf(false) }
     var selectedFeedCategory by remember { mutableStateOf<String?>(null) }
     var scrollToMessageId by remember { mutableStateOf<String?>(null) }
+    var icsReportData by remember { mutableStateOf<ICS213ReportData?>(null) }
     val emergencyCount = remember(classificationCache.size) {
         classificationCache.values.count { shouldShowEmergencyBadge(it) }
     }
@@ -312,13 +316,27 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
     // Emergency Feed bottom sheet — lists active categories sorted by priority
     if (showEmergencyFeed) {
+        // Derive a human-readable channel name for the report header.
+        val feedChannelName = when {
+            currentChannel != null -> "#$currentChannel"
+            selectedLocationChannel is com.bitchat.android.geohash.ChannelID.Location ->
+                "#${(selectedLocationChannel as com.bitchat.android.geohash.ChannelID.Location).channel.geohash}"
+            else -> "#mesh"
+        }
         EmergencyFeedSheet(
             classificationCache = classificationCache,
             messages = displayMessages,
+            currentUserNickname = nickname,
+            peersConnected = connectedPeers.size,
+            currentChannel = feedChannelName,
             onDismiss = { showEmergencyFeed = false },
             onCategorySelected = { category ->
                 selectedFeedCategory = category
                 showEmergencyFeed = false
+            },
+            onGenerateReport = { reportData ->
+                showEmergencyFeed = false
+                icsReportData = reportData
             }
         )
     }
@@ -336,6 +354,14 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 selectedFeedCategory = null
                 scrollToMessageId = msg.id
             }
+        )
+    }
+
+    // ICS-213 report preview — full-screen with print/save-as-PDF action
+    icsReportData?.let { data ->
+        ICS213ReportScreen(
+            reportData = data,
+            onBack = { icsReportData = null }
         )
     }
 

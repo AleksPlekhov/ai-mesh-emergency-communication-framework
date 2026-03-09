@@ -213,11 +213,32 @@ All mesh components use `android.util.Log` with consistent tags:
 
 ## 9. AI Module Specifics
 
+### Module Placement Rule (MANDATORY)
+
+> **New code with no Android framework or Jetpack Compose dependencies MUST go in `:disastermesh-ai`.**
+
+| Code type | Module |
+|-----------|--------|
+| Pure Kotlin logic, data classes, algorithms | `:disastermesh-ai` |
+| Functions that use `ClassificationResult`, `MessagePriority` | `:disastermesh-ai` |
+| HTML/report generators with no Android deps | `:disastermesh-ai` |
+| Compose UI, `Context`, `View`, Android SDK types | `:app` |
+| BLE, crypto, Nostr, mesh networking | `:app` |
+
+Examples already in `:disastermesh-ai`: `ICS213ReportData`, `ICS213ReportGenerator`, `shouldShowEmergencyBadge`, `categoryEmojiAndLabel`.
+
 ### Classifier System
 ```
 MessageClassifierFactory    — Selects TFLite or keyword backend
 TFLiteMessageClassifier       — Neural classification (requires .tflite asset)
 KeywordMessageClassifier      — Rule-based fallback (always works)
+```
+
+### Emergency Classification
+```
+ai/emergency/EmergencyClassification.kt  — shouldShowEmergencyBadge(), categoryEmojiAndLabel()
+ai/report/ICS213ReportData.kt            — Data classes for FEMA ICS-213 report
+ai/report/ICS213ReportGenerator.kt       — Pure HTML generator (no Android deps)
 ```
 
 ### Voice Input
@@ -270,6 +291,7 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 2. Check `AGENTS.md` for architectural constraints
 3. Verify permission requirements for new features
 4. Test with both BLE enabled and disabled
+5. **Module placement**: place new code in `:disastermesh-ai` if it has no Android/Compose deps (see Section 9)
 
 ### After Making Changes
 1. Update ChangeLog file with made changes

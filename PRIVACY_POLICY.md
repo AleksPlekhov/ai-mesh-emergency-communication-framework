@@ -1,6 +1,6 @@
 # bitchat Privacy Policy
 
-*Last updated: January 2025*
+*Last updated: March 2026*
 
 ## Our Commitment
 
@@ -11,7 +11,8 @@ bitchat is designed with privacy as its foundation. We believe private communica
 **WE DO NOT COLLECT ANY INFORMATION.**
 
 - **No personal data collection** - We don't collect names, emails, or phone numbers
-- **No location data collection** - Location is accessed only for local processing (BLE/Geohash) and is never collected or sent to us
+- **No background location collection** - Location is accessed only when you explicitly choose to attach it to an emergency message, or for local BLE/Geohash processing. It is never collected by us or sent to any server
+- **Voluntary emergency location sharing** - When the app detects an emergency message, you may optionally attach your GPS coordinates or a typed address. This data is included in the message body and shared only with peers on the mesh — the same way any other message content is shared
 - **Hybrid Functionality** - bitchat offers two modes of communication:
   - **Bluetooth Mesh Chat**: This mode is completely offline, using peer-to-peer Bluetooth connections. It does not use any servers or internet connection.
   - **Geohash Chat**: This mode uses an internet connection to communicate with others in a specific geographic area. It relies on Nostr relays for message transport.
@@ -59,6 +60,7 @@ When you use bitchat, nearby peers can see:
 - Your ephemeral public key (changes each session)
 - Messages you send to public rooms or directly to them
 - Your approximate Bluetooth signal strength (for connection quality)
+- Your location, **if and only if** you chose to attach it to an emergency message (GPS coordinates or typed address become part of the message body)
 
 ### With Room Members
 
@@ -71,7 +73,7 @@ When you join a password-protected room:
 
 bitchat **never**:
 - Collects personal information
-- Collects location history
+- Collects or stores location history (any location you attach to a message lives only in that message, not in a separate log)
 - Transmits any data to us (the developers)
 - Stores data on servers
 - Shares data with third parties
@@ -111,6 +113,17 @@ To provide the core functionality of bitchat, we access your device's location d
   - Your precise GPS coordinates are **never** sent to any server or peer.
   - Only the coarse geohash (representing an area, not a pinpoint) is shared with the Nostr network.
   - You can use the "Bluetooth Mesh Chat" mode without this feature if you prefer.
+
+### 3. Emergency Message Location Attachment
+- **Why we need it:** When the app's on-device classifier detects that a message you're about to send is an emergency (fire, flood, medical, etc.), it offers to attach your location so that responders can find you.
+- **How we use it:** You are always prompted before any location is accessed. You may:
+  - Tap **"Use GPS coordinates"** — your device's last known GPS fix is read once and formatted as `latitude,longitude` (e.g. `37.77201,-122.41465`), then appended to your message body as `📍 lat,lon`.
+  - Type a location manually (address, landmark) — no GPS access occurs.
+  - Tap **"Skip"** — your message is sent without any location.
+- **Privacy protection:**
+  - Location access is **always on-demand and user-initiated** — there is no background or continuous tracking.
+  - The coordinates become part of the message text and travel only over the local Bluetooth mesh to nearby peers (and any Nostr relays if enabled). They are **not** transmitted to us or any third-party server.
+  - Each emergency message prompts independently; no location is stored or reused.
 
 **We do not collect, store, or share your location history.** Location data is processed locally on your device to enable these specific features.
 

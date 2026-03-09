@@ -16,7 +16,7 @@ import com.bitchat.android.ai.classifier.MessagePriority
 //  For the keyword classifier the confidence is hardcoded (0.95 / 0.85) and the
 //  emergencyType is always set, so they always pass.
 //
-const val EMERGENCY_CONFIDENCE_THRESHOLD = 0.30f
+const val EMERGENCY_CONFIDENCE_THRESHOLD = 0.25f
 
 /**
  * Returns true when this result should render a colored border + badge.
@@ -33,6 +33,18 @@ fun shouldShowEmergencyBadge(classification: ClassificationResult): Boolean = wh
     classification.priority == MessagePriority.HIGH     -> true
     else                                                -> false
 }
+
+/**
+ * Returns true when the classifier has a tentative emergency type but confidence is
+ * below the confirmed threshold.
+ *
+ * These are displayed as "❓ POSSIBLE [TYPE] · X%" with a muted dimmed border,
+ * indicating a possible detection that did not pass the confidence gate.
+ *
+ * Mutually exclusive with [shouldShowEmergencyBadge] — only one can be true.
+ */
+fun shouldShowPossibleBadge(classification: ClassificationResult): Boolean =
+    classification.emergencyType.isNotEmpty() && !shouldShowEmergencyBadge(classification)
 
 /**
  * Maps an emergency type string to its display emoji and short label.

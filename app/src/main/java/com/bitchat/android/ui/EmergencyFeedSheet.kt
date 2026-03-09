@@ -91,7 +91,7 @@ fun EmergencyFeedSheet(
         sheetState = sheetState,
         dragHandle = null,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = colorScheme.surfaceVariant,
+        containerColor = colorScheme.surfaceDim,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -234,9 +234,6 @@ fun EmergencyFeedSheet(
 
 // ── Private helpers ────────────────────────────────────────────────────────────
 
-/** Messages from the same sender within this window are consolidated into one entry. */
-private const val CONSOLIDATE_WINDOW_MS = 5 * 60 * 1000L
-
 /**
  * Builds an [ICS213ReportData] from the Feed's current state.
  * Called on the button tap — data is snapshotted at that moment.
@@ -299,10 +296,7 @@ private fun buildReportData(
     return ICS213ReportData(
         messageNumber = messageNumber,
         from = currentUserNickname,
-        date = dateFmt.format(now).let {
-            // re-format with dashes: yyyyMMdd → yyyy-MM-dd
-            "${it.substring(0,4)}-${it.substring(4,6)}-${it.substring(6,8)}"
-        },
+        date = dateFmt.format(now),
         time = timeDisplayFmt.format(now) + " UTC",
         peersConnected = peersConnected,
         channel = currentChannel,
@@ -312,10 +306,11 @@ private fun buildReportData(
 }
 
 /**
- * Groups messages by sender and merges those within [CONSOLIDATE_WINDOW_MS]
- * of each other into a single [ICS213Message] entry.
+ * Maps each emergency message to its own [ICS213Message] row, sorted by time.
  *
- * Result is sorted by the timestamp of the first message in each group.
+ * Each incident is kept separate so the report accurately reflects individual
+ * reports. The main message text is capped at 120 chars; any appended 📍 location
+ * is preserved in full and never truncated.
  */
 private fun consolidateMessages(
     catMessages: List<BitchatMessage>,
@@ -324,61 +319,26 @@ private fun consolidateMessages(
 ): List<ICS213Message> {
     if (catMessages.isEmpty()) return emptyList()
 
-    // Group by sender, preserving time order within each group.
-    val bySender = catMessages
+    return catMessages
         .sortedBy { it.timestamp }
-        .groupBy { it.sender }
+        .map { msg ->
+            val conf = classificationCache[msg.id]?.confidence ?: 0f
 
-    // (firstTimestamp, ICS213Message) pairs so we can re-sort across senders afterward.
-    val result = mutableListOf<Pair<Long, ICS213Message>>()
+            // Split text at the appended location tag (if present) so we never
+            // truncate GPS coordinates mid-number.
+            val content = msg.content
+            val locIdx = content.indexOf("\n📍")
+            val (mainText, locPart) = if (locIdx >= 0)
+                content.substring(0, locIdx) to content.substring(locIdx)
+            else
+                content to ""
+            val truncatedMain = if (mainText.length > 120) mainText.take(120) + "…" else mainText
 
-    for ((_, senderMessages) in bySender) {
-        val sorted = senderMessages.sortedBy { it.timestamp }
-        var windowGroup = mutableListOf(sorted.first())
-
-        for (k in 1 until sorted.size) {
-            val msg = sorted[k]
-            val gap = msg.timestamp.time - windowGroup.last().timestamp.time
-            if (gap <= CONSOLIDATE_WINDOW_MS) {
-                windowGroup.add(msg)
-            } else {
-                result.add(windowGroup.first().timestamp.time to
-                    buildIcs213Message(windowGroup, classificationCache, tsFmt))
-                windowGroup = mutableListOf(msg)
-            }
+            ICS213Message(
+                sender    = msg.sender,
+                timestamp = tsFmt.format(msg.timestamp),
+                text      = truncatedMain + locPart,
+                confidencePct = (conf * 100).toInt()
+            )
         }
-        // Flush the last window.
-        result.add(windowGroup.first().timestamp.time to
-            buildIcs213Message(windowGroup, classificationCache, tsFmt))
-    }
-
-    return result.sortedBy { it.first }.map { it.second }
-}
-
-/** Merges a consolidated group of messages into one [ICS213Message]. */
-private fun buildIcs213Message(
-    group: List<BitchatMessage>,
-    classificationCache: Map<String, ClassificationResult>,
-    tsFmt: SimpleDateFormat
-): ICS213Message {
-    val maxConf = group.mapNotNull { classificationCache[it.id]?.confidence }.maxOrNull() ?: 0f
-    val firstTs = tsFmt.format(group.first().timestamp)
-    val tsStr = if (group.size > 1)
-        "$firstTs–${tsFmt.format(group.last().timestamp)}"
-    else
-        firstTs
-
-    // Each message capped at 80 chars; combined total capped at 200.
-    val combined = group
-        .joinToString(" / ") { msg ->
-            msg.content.let { if (it.length > 80) it.take(80) + "…" else it }
-        }
-        .let { if (it.length > 200) it.take(200) + "…" else it }
-
-    return ICS213Message(
-        sender = group.first().sender,
-        timestamp = tsStr,
-        text = combined,
-        confidencePct = (maxConf * 100).toInt()
-    )
 }

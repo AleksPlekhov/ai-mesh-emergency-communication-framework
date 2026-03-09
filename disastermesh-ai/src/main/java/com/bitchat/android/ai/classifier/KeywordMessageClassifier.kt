@@ -106,11 +106,12 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
             "BOMB"                    to "SECURITY",
             "EXPLOSIVE"               to "SECURITY",
             "TERRORIST"               to "SECURITY",
-            // Collapse — structural catastrophe
+            // Collapse — structural catastrophe (specific phrases only)
             "EXPLOSION"               to "COLLAPSE",
             "BUILDING COLLAPSED"      to "COLLAPSE",
-            "COLLAPSED"               to "COLLAPSE",
             "STRUCTURE COLLAPSE"      to "COLLAPSE",
+            // Person collapse — medical emergency ("she collapsed", "old woman collapsed", etc.)
+            "COLLAPSED"               to "MEDICAL",
             // Fire — immediate evacuation
             "IMMEDIATE EVACUATION"    to "FIRE",
             "WILDFIRE APPROACHING"    to "FIRE"

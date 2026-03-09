@@ -18,24 +18,28 @@ import com.bitchat.android.ai.classifier.MessagePriority
 import androidx.compose.material3.ColorScheme
 import com.bitchat.android.ai.emergency.categoryEmojiAndLabel
 import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
+import com.bitchat.android.ai.emergency.shouldShowPossibleBadge
 
 /**
  * Left-border color for a classified emergency message, or `null` for plain messages.
  *
+ *  • Confirmed emergency  → full category color (opaque)
+ *  • Possible / uncertain → same category color at 40% alpha (dim stripe)
+ *  • No badge             → null (caller falls back to muted grey)
+ *
  * All colors are derived from [colorScheme] where a semantic token exists, and from
  * explicit light/dark-aware values where Material3 has no suitable token.
- *
- *  MEDICAL / CRITICAL  → colorScheme.error   (red in both themes)
- *  RESOURCE_REQUEST    → colorScheme.primary  (brand green matches "resources available")
- *  FIRE / FLOOD / …    → explicit bright (dark) or muted (light) pair
  */
 fun emergencyBorderColor(
     classification: ClassificationResult,
     colorScheme: ColorScheme,
     isDarkTheme: Boolean
 ): Color? {
-    if (!shouldShowEmergencyBadge(classification)) return null
-    return when (classification.emergencyType) {
+    val isConfirmed = shouldShowEmergencyBadge(classification)
+    val isPossible  = !isConfirmed && shouldShowPossibleBadge(classification)
+    if (!isConfirmed && !isPossible) return null
+
+    val base: Color = when (classification.emergencyType) {
         "MEDICAL"          -> colorScheme.error
         "FIRE"             -> if (isDarkTheme) Color(0xFFFF6B35) else Color(0xFFBF360C)
         "COLLAPSE"         -> if (isDarkTheme) Color(0xFFEF5350) else Color(0xFFB71C1C)
@@ -48,39 +52,59 @@ fun emergencyBorderColor(
         else -> when (classification.priority) {
             MessagePriority.CRITICAL -> colorScheme.error
             MessagePriority.HIGH     -> if (isDarkTheme) Color(0xFFFFB74D) else Color(0xFFE65100)
-            else                     -> null
+            else                     -> return null
         }
     }
+    return if (isPossible) base.copy(alpha = 0.4f) else base
 }
 
 /**
  * Small one-line badge that appears below every classified message text.
  *
- * • Emergency  → colored emoji badge  e.g.  🏥 MEDICAL · 97%
- * • No match   → dim "UNDEFINED" in muted onSurface color
- *
- * Nothing is rendered if [classification] is null (message not yet processed).
+ * • Confirmed emergency  → colored emoji badge  e.g.  "🏥 MEDICAL · 97%"
+ * • Uncertain detection  → grey badge           e.g.  "❓ POSSIBLE FLOOD · 24%"
+ * • No match             → nothing rendered
  */
 @Composable
 fun EmergencyBadge(classification: ClassificationResult) {
     val colorScheme = MaterialTheme.colorScheme
     val isDark      = isSystemInDarkTheme()
-    val color       = emergencyBorderColor(classification, colorScheme, isDark)
+    val pct         = (classification.confidence * 100).toInt()
 
-    if (color != null) {
-        // ── Emergency / warning badge ─────────────────────────────────────
-        val (emoji, label) = emojiAndLabel(classification)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 2.dp, start = 4.dp)
-        ) {
-            Text(
-                text = "$emoji $label · ${(classification.confidence * 100).toInt()}%",
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Medium,
-                color = color
-            )
+    when {
+        shouldShowEmergencyBadge(classification) -> {
+            // ── Confirmed emergency ───────────────────────────────────────
+            val color = emergencyBorderColor(classification, colorScheme, isDark) ?: return
+            val (emoji, label) = emojiAndLabel(classification)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp, start = 4.dp)
+            ) {
+                Text(
+                    text = "$emoji $label · $pct%",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Medium,
+                    color = color
+                )
+            }
+        }
+        shouldShowPossibleBadge(classification) -> {
+            // ── Uncertain detection ───────────────────────────────────────
+            val muted = if (isDark) Color(0xFF9E9E9E) else Color(0xFF757575)
+            val (_, label) = emojiAndLabel(classification)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 2.dp, start = 4.dp)
+            ) {
+                Text(
+                    text = "❓ POSSIBLE $label · $pct%",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Medium,
+                    color = muted
+                )
+            }
         }
     }
 }

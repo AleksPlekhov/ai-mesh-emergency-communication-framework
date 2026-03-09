@@ -51,10 +51,13 @@ fun CategoryMessagesScreen(
     val stripeColor = categoryBorderColor(category, colorScheme, isDark)
     val (emoji, label) = categoryEmojiAndLabel(category)
 
-    // Filter messages to only those that belong to this category.
+    // Filter messages to only those that belong to this category AND pass the badge threshold.
+    // Must mirror the same predicate used by EmergencyFeedSheet to count messages, otherwise
+    // the count in the sheet and the list here would be out of sync.
     val filteredMessages = remember(messages, classificationCache.size) {
         messages.filter { msg ->
-            classificationCache[msg.id]?.emergencyType == category
+            val result = classificationCache[msg.id] ?: return@filter false
+            result.emergencyType == category && shouldShowEmergencyBadge(result)
         }
     }
 

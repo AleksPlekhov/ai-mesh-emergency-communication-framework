@@ -343,7 +343,9 @@ private fun appendIOSFormattedContent(
     // iOS-style patterns: allow optional '#abcd' suffix in mentions
     val hashtagPattern = "#([a-zA-Z0-9_]+)".toRegex()
     val mentionPattern = "@([\\p{L}0-9_]+(?:#[a-fA-F0-9]{4})?)".toRegex()
-    
+    // Location tag appended by emergency location feature: "📍 <text>"
+    val locationPattern = "📍[^\n]*".toRegex()
+
     val hashtagMatches = hashtagPattern.findAll(content).toList()
     val mentionMatches = mentionPattern.findAll(content).toList()
     
@@ -386,6 +388,11 @@ private fun appendIOSFormattedContent(
         if (!overlapsMention(range)) {
             allMatches.add(range to "url")
         }
+    }
+
+    // Add location tag matches (📍 …). These never overlap with other patterns.
+    for (lm in locationPattern.findAll(content)) {
+        allMatches.add(lm.range to "location")
     }
 
     // Remove generic hashtag matches that overlap with detected geohash ranges to avoid duplicate rendering
@@ -526,6 +533,16 @@ private fun appendIOSFormattedContent(
                         start = start,
                         end = end
                     )
+                    builder.pop()
+                } else if (type == "location") {
+                    // Location tag (📍 …) — green accent to distinguish it from message body
+                    val locationColor = if (isDark) Color(0xFF00FF41) else Color(0xFF1B8A3D)
+                    builder.pushStyle(SpanStyle(
+                        color = locationColor,
+                        fontSize = BASE_FONT_SIZE.sp,
+                        fontWeight = FontWeight.Medium
+                    ))
+                    builder.append(matchText)
                     builder.pop()
                 } else {
                     // Fallback: treat as normal text

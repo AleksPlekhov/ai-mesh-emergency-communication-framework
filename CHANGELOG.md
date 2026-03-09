@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # Changelog — DisasterMesh
 
-## [0.1.0] - 2026-03-08
+## [0.1.0] - 2026-03-09
 
 ### Added
 - `:disastermesh-ai` Gradle library module — all AI/ML code extracted from `:app`, independently testable
@@ -18,7 +18,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Coloured left stripe and emoji badge on every classified message (e.g. `🏥 MEDICAL · 94%`); all colours derived from `MaterialTheme.colorScheme` for light/dark theme support
 - `EmergencyFeedSheet` — categories sorted by priority with coloured stripes, message counts, and a close button
 - `CategoryMessagesScreen` — full-screen slide-in view filtered to one emergency category; system back button supported via `BackHandler`
-- `EmptyMessagesState` — placeholder shown when the message list is empty
 - Offline speech-to-text (`VoskTranscribeButton`) integrated into the chat input bar
 - Emergency Feed 🚨 button moved to the header, right of the peer counter; shows live emergency message count (`👥 2  🚨 3`) for ambient situational awareness
 - Tap any message in `CategoryMessagesScreen` to dismiss the overlay and jump to that message in the main chat
@@ -26,6 +25,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `ICS213PrintHelper` — loads report into a headless `WebView` and triggers Android `PrintManager` (Save as PDF / physical printer)
 - `ICS213ReportScreen` — full-screen Compose preview with black/green header and Share button; white background for print legibility
 - "GENERATE ICS-213 REPORT" button pinned at the bottom of `EmergencyFeedSheet`; hidden when the Feed is empty
+- `EmergencyClassification.kt` (`:disastermesh-ai`) — canonical `shouldShowEmergencyBadge()` and `shouldShowPossibleBadge()` predicates; `categoryEmojiAndLabel()` extracted from `:app` into the AI module
+- `LocationAttachSheet` — optional GPS / manual address attachment for CRITICAL and HIGH messages; appended as `📍 lat,lon` to message body; location never pre-filled
+- **BLE Priority Queue** — `BluetoothPacketBroadcaster` actor replaced with `java.util.PriorityQueue` + `Mutex` + `CONFLATED` signal; CRITICAL packets preempt all queued NORMAL/LOW packets at the radio layer
+- `RoutedPacket.priority: Int` field (default 2 = NORMAL); `sendMessage()` classifies content with `KeywordMessageClassifier` synchronously and sets priority before enqueuing
+- `PriorityQueueBenchmarkTest` — 5 JUnit tests proving CRITICAL latency improvement; benchmark output: 1001× faster delivery vs FIFO with 1 000 queued packets at 100 µs/packet
+
+### Fixed
+- `ICS213ReportScreen`: WebView dependency removed from the report preview entirely; the form is now rendered as a pure Compose `LazyColumn` directly from `ICS213ReportData` (white background, monospace font, priority badges, signature blocks); this eliminates the Android 11 Trichrome crash where `Package not found: com.google.android.webview` prevented the report from showing at all
+- `ICS213ReportScreen` print/share button: tries `ICS213PrintHelper` (WebView + PrintManager) first; if WebView throws (broken Trichrome), falls back to writing the HTML to the app cache and sharing it via `FileProvider` so the user can open and print it in any browser; `ICS213PrintHelper.printReport()` now lets the exception propagate so the caller can handle the fallback
+- `CompositeMessageClassifier`: TFLite results with confidence below `EMERGENCY_CONFIDENCE_THRESHOLD` (0.25f) were still showing emergency badges because `mapToPriority("MEDICAL"/"COLLAPSE")` returns `CRITICAL`, bypassing the confidence gate in `shouldShowEmergencyBadge()`; TFLite priority is now capped to `NORMAL` when confidence < threshold so only keyword-matched results keep their CRITICAL/HIGH bypass
+- `KeywordMessageClassifier`: messages like "I can't move" (injury/entrapment) did not trigger the `LocationAttachSheet` because no matching CRITICAL keyword existed; added entrapment/mobility-loss phrases to `CRITICAL_KEYWORDS`: `CAN'T MOVE`, `CANT MOVE`, `CANNOT MOVE`, `CAN NOT MOVE` (→ MEDICAL), `TRAPPED UNDER`, `I AM TRAPPED`, `I'M TRAPPED`, `IM TRAPPED` (→ COLLAPSE), `TRAPPED INSIDE` (→ MEDICAL)
+- ICS-213 report: date field rendered as `2026--0-3-` due to double-formatting; now uses `yyyy-MM-dd` directly
+- ICS-213 report: same-sender messages within 5-minute window were merged into one row; each incident now renders as a separate row
+- ICS-213 report: GPS coordinates truncated mid-number when original text exceeded 80 chars; location part (`\n📍 …`) is now split out before truncation and preserved in full
+- ICS-213 report: time ranges (`17:49:12–17:49:32`) shown for consolidated entries; removed with per-message rows
+- `CategoryMessagesScreen` filter missed `shouldShowEmergencyBadge` check, showing low-confidence messages in category view
+- `"COLLAPSED"` keyword mapped to COLLAPSE (structural); reclassified as MEDICAL since "person collapsed" is the dominant context; structural collapse still caught by `"BUILDING COLLAPSED"` and `"STRUCTURE COLLAPSE"`
+- `CompositeMessageClassifier` now skips messages shorter than 3 words (e.g. `"."`, `"hey"`) to prevent false-positive badge display; standalone `KeywordMessageClassifier` (used for priority-queue urgency) is unaffected so `"SOS"` still receives CRITICAL priority
+- `ClassifierUtils.mapToPriority` returned `LOW` for unknown TFLite categories; corrected to `NORMAL`
+- PRIVACY_POLICY.md updated to document voluntary emergency location sharing added in this release
 
 ----------------------------------------------------------
 ----------------------------------------------------------

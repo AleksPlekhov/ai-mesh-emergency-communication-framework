@@ -92,6 +92,16 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
             "SEIZURE"                 to "MEDICAL",
             "SOS"                     to "MEDICAL",
             "MAYDAY"                  to "MEDICAL",
+            // Entrapment / mobility loss — physically unable to escape (disaster context)
+            "CANNOT MOVE"             to "MEDICAL",  // e.g. "I cannot move my legs"
+            "CAN NOT MOVE"            to "MEDICAL",
+            "CAN'T MOVE"              to "MEDICAL",  // with apostrophe
+            "CANT MOVE"               to "MEDICAL",  // apostrophe stripped by some keyboards
+            "TRAPPED UNDER"           to "COLLAPSE", // structural entrapment ("trapped under rubble")
+            "TRAPPED INSIDE"          to "MEDICAL",  // trapped in a building/vehicle
+            "I AM TRAPPED"            to "COLLAPSE",
+            "I'M TRAPPED"             to "COLLAPSE",
+            "IM TRAPPED"              to "COLLAPSE", // apostrophe stripped
             // Flood — imminent inundation
             "FLASH FLOOD WARNING"     to "FLOOD",
             "DAM BREACH"              to "FLOOD",

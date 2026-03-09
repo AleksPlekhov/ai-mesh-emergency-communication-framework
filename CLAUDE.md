@@ -294,7 +294,20 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 5. **Module placement**: place new code in `:disastermesh-ai` if it has no Android/Compose deps (see Section 9)
 
 ### After Making Changes
-1. Update ChangeLog file with made changes
+1. **Update `CHANGELOG.md`** — mandatory after every completed feature or bug fix.
+
+   **What to update:**
+   - Add entries under the current `[0.x.x]` block (create a new version block if none exists).
+   - `### Added` — new files, features, behaviors, or data structures introduced.
+   - `### Fixed` — bugs corrected; include the symptom (what was wrong) and the fix (what changed).
+   - `### Changed` — refactors or behavioral changes to existing functionality.
+
+   **Format rules:**
+   - One bullet per logical change (not per file).
+   - Mention affected class/file names in backticks where useful (`BluetoothPacketBroadcaster`, `RoutedPacket`).
+   - For bug fixes: state the broken behavior first, then the fix. Example:
+     `ICS-213 date rendered as "2026--0-3-" due to double-formatting; now uses yyyy-MM-dd directly`
+   - Do **not** write vague entries like "fixed bug" or "updated code".
 
 ### Code Style
 - Kotlin official conventions

@@ -24,6 +24,10 @@ object ICS213PrintHelper {
         html: String,
         jobName: String = "ICS-213 Emergency Report"
     ) {
+        // Note: WebView(context) may throw AndroidRuntimeException on Android 11 devices
+        // where com.google.android.webview is mis-configured (Trichrome issue).
+        // The caller (ICS213ReportScreen) wraps this call in runCatching and falls back
+        // to shareHtmlFile() when an exception is thrown — do NOT catch internally.
         val webView = WebView(context)
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {

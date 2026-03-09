@@ -1,6 +1,7 @@
 package com.bitchat.android.ai.classifier
 
 import android.util.Log
+import com.bitchat.android.ai.emergency.EMERGENCY_CONFIDENCE_THRESHOLD
 
 private const val TAG = "MessageClassifier"
 
@@ -31,6 +32,20 @@ internal class CompositeMessageClassifier(
         messageText: String,
         metadata: Map<String, String>
     ): ClassificationResult {
+        // ── Pre-filter: too short to carry emergency information ──────────
+        // Avoids false positives on ".", ",", "h", "hey", etc.
+        // Note: standalone KeywordMessageClassifier (used for priority-queue
+        // urgency in sendMessage) is NOT gated here, so "SOS" still gets
+        // CRITICAL priority even as a single word.
+        val wordCount = messageText.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+        if (wordCount < 3) {
+            return ClassificationResult(
+                priority  = MessagePriority.NORMAL,
+                confidence = 0f,
+                reasoning = "Too short ($wordCount word(s)) — skipped"
+            )
+        }
+
         // ── Stage 1: keyword matching ─────────────────────────────────────
         // Keyword results always carry an emergencyType and hard-coded
         // confidence (0.95 for CRITICAL, 0.85 for HIGH).  If a keyword fired
@@ -49,7 +64,21 @@ internal class CompositeMessageClassifier(
         Log.d(TAG, "[TFLITE ] \"${messageText.take(60)}\" → " +
                 "${tf.priority} / ${tf.emergencyType} / conf=${
                     String.format("%.0f", tf.confidence * 100)}% / ${tf.reasoning}")
-        return tf
+
+        // ── Confidence gate: prevent TFLite priority from bypassing the badge threshold ──
+        // mapToPriority() assigns CRITICAL to "MEDICAL"/"COLLAPSE" and HIGH to
+        // "FIRE"/"FLOOD"/"SECURITY" regardless of confidence score.  Without this cap,
+        // a 24%-confidence MEDICAL prediction would have priority=CRITICAL and bypass the
+        // EMERGENCY_CONFIDENCE_THRESHOLD check in shouldShowEmergencyBadge(), showing a
+        // badge that should be hidden.
+        //
+        // Keyword results (stage 1) intentionally keep their CRITICAL/HIGH priority because
+        // they only fire when a known emergency keyword is present (hardcoded conf 0.85–0.95f).
+        val safeTf = if (tf.confidence < EMERGENCY_CONFIDENCE_THRESHOLD
+                        && tf.priority.ordinal < MessagePriority.NORMAL.ordinal) {
+            tf.copy(priority = MessagePriority.NORMAL)
+        } else tf
+        return safeTf
     }
 
     override fun close() {

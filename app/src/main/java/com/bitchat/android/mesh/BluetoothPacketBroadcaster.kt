@@ -18,9 +18,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.Job
 import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.channels.actor
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Handles packet broadcasting to connected devices using actor pattern for serialization
@@ -108,29 +110,49 @@ class BluetoothPacketBroadcaster(
         }
     }
     
-    // Data class to hold broadcast request information
+    /**
+     * Holds a broadcast request with its priority.
+     * Lower [routed.priority] value = higher urgency (CRITICAL=0 … LOW=3).
+     * [Comparable] makes [java.util.PriorityQueue] sort by urgency automatically.
+     */
     private data class BroadcastRequest(
         val routed: RoutedPacket,
         val gattServer: BluetoothGattServer?,
         val characteristic: BluetoothGattCharacteristic?
-    )
-    
-    // Actor scope for the broadcaster
+    ) : Comparable<BroadcastRequest> {
+        override fun compareTo(other: BroadcastRequest): Int =
+            this.routed.priority.compareTo(other.routed.priority)
+    }
+
+    // ── Priority broadcaster ─────────────────────────────────────────────────
     private val broadcasterScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val transferJobs = ConcurrentHashMap<String, Job>()
-    
-    // SERIALIZATION: Actor to serialize all broadcast operations
-    @OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
-    private val broadcasterActor = broadcasterScope.actor<BroadcastRequest>(
-        capacity = Channel.UNLIMITED
-    ) {
-        Log.d(TAG, "🎭 Created packet broadcaster actor")
-        try {
-            for (request in channel) {
-                broadcastSinglePacketInternal(request.routed, request.gattServer, request.characteristic)
+
+    /** Min-heap ordered by [BroadcastRequest.compareTo] (CRITICAL first). */
+    private val requestQueue  = java.util.PriorityQueue<BroadcastRequest>()
+    private val queueMutex    = Mutex()
+    /** CONFLATED: multiple back-to-back enqueues coalesce into one wakeup. */
+    private val newItemSignal = Channel<Unit>(Channel.CONFLATED)
+    /** Exposed for debug info without locking. */
+    private val pendingCount  = AtomicInteger(0)
+
+    init {
+        broadcasterScope.launch {
+            Log.d(TAG, "🎭 Priority packet broadcaster started")
+            try {
+                while (isActive) {
+                    newItemSignal.receive()          // suspend until work arrives
+                    while (true) {
+                        val next = queueMutex.withLock { requestQueue.poll() } ?: break
+                        broadcastSinglePacketInternal(
+                            next.routed, next.gattServer, next.characteristic
+                        )
+                        pendingCount.decrementAndGet()
+                    }
+                }
+            } finally {
+                Log.d(TAG, "🎭 Priority packet broadcaster terminated")
             }
-        } finally {
-            Log.d(TAG, "🎭 Packet broadcaster actor terminated")
         }
     }
     
@@ -274,22 +296,21 @@ class BluetoothPacketBroadcaster(
 
     
     /**
-     * Public entry point for broadcasting - submits request to actor for serialization
+     * Public entry point for broadcasting.
+     * Enqueues the request into the priority queue and signals the consumer coroutine.
+     * Packets with lower [RoutedPacket.priority] value are processed first (CRITICAL=0).
      */
     fun broadcastSinglePacket(
         routed: RoutedPacket,
         gattServer: BluetoothGattServer?,
         characteristic: BluetoothGattCharacteristic?
     ) {
-        // Submit broadcast request to actor for serialized processing
         broadcasterScope.launch {
-            try {
-                broadcasterActor.send(BroadcastRequest(routed, gattServer, characteristic))
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to send broadcast request to actor: ${e.message}")
-                // Fallback to direct processing if actor fails
-                broadcastSinglePacketInternal(routed, gattServer, characteristic)
+            queueMutex.withLock {
+                requestQueue.add(BroadcastRequest(routed, gattServer, characteristic))
+                pendingCount.incrementAndGet()
             }
+            newItemSignal.trySend(Unit)   // wake up consumer (CONFLATED = no duplicate pileup)
         }
     }
 
@@ -525,23 +546,18 @@ class BluetoothPacketBroadcaster(
         return buildString {
             appendLine("=== Packet Broadcaster Debug Info ===")
             appendLine("Broadcaster Scope Active: ${broadcasterScope.isActive}")
-            appendLine("Actor Channel Closed: ${broadcasterActor.isClosedForSend}")
+            appendLine("Queue Pending: ${pendingCount.get()} packets")
             appendLine("Connection Scope Active: ${connectionScope.isActive}")
         }
     }
-    
+
     /**
-     * Shutdown the broadcaster actor gracefully
+     * Shutdown the priority broadcaster gracefully.
      */
     fun shutdown() {
-        Log.d(TAG, "Shutting down BluetoothPacketBroadcaster actor")
-        
-        // Close the actor gracefully
-        broadcasterActor.close()
-        
-        // Cancel the broadcaster scope
+        Log.d(TAG, "Shutting down BluetoothPacketBroadcaster")
+        newItemSignal.close()   // unblocks the consumer's receive() call
         broadcasterScope.cancel()
-        
         Log.d(TAG, "BluetoothPacketBroadcaster shutdown complete")
     }
 } 

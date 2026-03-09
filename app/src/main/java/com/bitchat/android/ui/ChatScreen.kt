@@ -27,6 +27,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bitchat.android.model.BitchatMessage
 import com.bitchat.android.ui.media.FullScreenImageViewer
 import com.bitchat.android.ai.classifier.ClassificationResult
+import com.bitchat.android.ai.classifier.KeywordMessageClassifier
+import com.bitchat.android.ai.classifier.MessagePriority
 import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
 import com.bitchat.android.ai.report.ICS213ReportData
 import com.bitchat.android.report.ICS213ReportScreen
@@ -85,6 +87,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var selectedFeedCategory by remember { mutableStateOf<String?>(null) }
     var scrollToMessageId by remember { mutableStateOf<String?>(null) }
     var icsReportData by remember { mutableStateOf<ICS213ReportData?>(null) }
+    // Location attachment — holds a message that is pending location confirmation before send
+    val keywordClassifier = remember { KeywordMessageClassifier() }
+    var pendingMessageText by remember { mutableStateOf<String?>(null) }
     val emergencyCount = remember(classificationCache.size) {
         classificationCache.values.count { shouldShowEmergencyBadge(it) }
     }
@@ -215,10 +220,18 @@ fun ChatScreen(viewModel: ChatViewModel) {
             viewModel.updateMentionSuggestions(newText.text)
         },
         onSend = {
-            if (messageText.text.trim().isNotEmpty()) {
-                viewModel.sendMessage(messageText.text.trim())
-                messageText = TextFieldValue("")
-                forceScrollToBottom = !forceScrollToBottom // Toggle to trigger scroll
+            val text = messageText.text.trim()
+            if (text.isNotEmpty()) {
+                val result = keywordClassifier.classify(text)
+                if (result.priority == MessagePriority.CRITICAL || result.priority == MessagePriority.HIGH) {
+                    // Intercept — show location attachment sheet before dispatching
+                    pendingMessageText = text
+                    messageText = TextFieldValue("")
+                } else {
+                    viewModel.sendMessage(text)
+                    messageText = TextFieldValue("")
+                    forceScrollToBottom = !forceScrollToBottom
+                }
             }
         },
         onSendVoiceNote = { peer, onionOrChannel, path ->
@@ -362,6 +375,24 @@ fun ChatScreen(viewModel: ChatViewModel) {
         ICS213ReportScreen(
             reportData = data,
             onBack = { icsReportData = null }
+        )
+    }
+
+    // Location attachment sheet — shown when keyword classifier flags a CRITICAL/HIGH message
+    pendingMessageText?.let { text ->
+        LocationAttachSheet(
+            onSend = { location ->
+                val finalText = if (location != null) "$text\n📍 $location" else text
+                viewModel.sendMessage(finalText)
+                pendingMessageText = null
+                forceScrollToBottom = !forceScrollToBottom
+            },
+            onDismiss = {
+                // Swipe-dismiss = send without location so the message is never lost
+                viewModel.sendMessage(text)
+                pendingMessageText = null
+                forceScrollToBottom = !forceScrollToBottom
+            }
         )
     }
 

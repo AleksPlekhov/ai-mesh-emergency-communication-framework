@@ -7,12 +7,14 @@ package com.bitchat.android.ai.report
  * so this class is independently unit-testable in the :disastermesh-ai module.
  */
 data class ICS213ReportData(
+    /** Tracking ID, e.g. "DM-20260308-2217". */
+    val messageNumber: String,
     /** Destination, e.g. "Incident Commander". */
     val to: String = "Incident Commander",
-    /** Origin, e.g. "@Aleks · #mesh". */
+    /** Operator's display name (no @ prefix), e.g. "Aleks". */
     val from: String,
     val subject: String = "Emergency Field Report",
-    /** ISO date, e.g. "2026-03-08". */
+    /** ISO date in UTC, e.g. "2026-03-08". */
     val date: String,
     /** HH:mm UTC, e.g. "22:17 UTC". */
     val time: String,
@@ -36,16 +38,28 @@ data class ICS213Category(
     val name: String,
     /** Display emoji, e.g. "🏥". */
     val emoji: String,
+    /**
+     * Highest severity across all messages in this category.
+     * One of "CRITICAL", "HIGH", or "ROUTINE".
+     */
+    val priority: String,
     val messages: List<ICS213Message>
 )
 
 data class ICS213Message(
-    /** Sender nickname, e.g. "@Anna". */
+    /** Sender nickname, e.g. "Anna". */
     val sender: String,
-    /** HH:mm:ss UTC. */
+    /**
+     * HH:mm:ss UTC of the first message, or "HH:mm:ss–HH:mm:ss" range
+     * when multiple messages were consolidated into one entry.
+     */
     val timestamp: String,
-    /** Message body, already truncated to 120 chars. */
+    /**
+     * Message body, already truncated/consolidated.
+     * Multiple messages from the same sender within a 5-minute window are
+     * joined with " / ".
+     */
     val text: String,
-    /** Confidence percentage, 0-100. */
+    /** Highest confidence percentage in this consolidated entry, 0-100. */
     val confidencePct: Int
 )

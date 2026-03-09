@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bitchat.android.ai.classifier.ClassificationResult
+import com.bitchat.android.ai.classifier.MessagePriority
 import com.bitchat.android.ai.emergency.categoryEmojiAndLabel
 import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
 import com.bitchat.android.ai.report.ICS213Category
@@ -233,9 +234,15 @@ fun EmergencyFeedSheet(
 
 // ── Private helpers ────────────────────────────────────────────────────────────
 
+/** Messages from the same sender within this window are consolidated into one entry. */
+private const val CONSOLIDATE_WINDOW_MS = 5 * 60 * 1000L
+
 /**
  * Builds an [ICS213ReportData] from the Feed's current state.
  * Called on the button tap — data is snapshotted at that moment.
+ *
+ * Messages from the same sender within a 5-minute window in the same category are
+ * consolidated into a single entry so the report stays concise.
  */
 private fun buildReportData(
     sortedCategories: List<String>,
@@ -247,14 +254,20 @@ private fun buildReportData(
 ): ICS213ReportData {
     val now = Date()
     val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
     }
-    val timeFmt = SimpleDateFormat("HH:mm", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
+    val timeFmt = SimpleDateFormat("HHmm", Locale.US).apply {
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
+    }
+    val timeDisplayFmt = SimpleDateFormat("HH:mm", Locale.US).apply {
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
     }
     val tsFmt = SimpleDateFormat("HH:mm:ss", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
+        timeZone = java.util.TimeZone.getTimeZone("UTC")
     }
+
+    // Unique message ID: DM-YYYYMMDD-HHMM
+    val messageNumber = "DM-${dateFmt.format(now).replace("-", "")}-${timeFmt.format(now)}"
 
     val categories = sortedCategories.map { cat ->
         val (emoji, label) = categoryEmojiAndLabel(cat)
@@ -262,29 +275,110 @@ private fun buildReportData(
             val result = classificationCache[msg.id] ?: return@filter false
             result.emergencyType == cat && shouldShowEmergencyBadge(result)
         }
+
+        // Derive category-level priority from the highest-priority message.
+        val catPriority = catMessages
+            .mapNotNull { classificationCache[it.id]?.priority }
+            .minByOrNull { it.ordinal }   // lower ordinal = higher severity
+            ?.let { p ->
+                when (p) {
+                    MessagePriority.CRITICAL -> "CRITICAL"
+                    MessagePriority.HIGH     -> "HIGH"
+                    else                     -> "ROUTINE"
+                }
+            } ?: "ROUTINE"
+
         ICS213Category(
             name = label,
             emoji = emoji,
-            messages = catMessages.map { msg ->
-                val confidence = classificationCache[msg.id]?.confidence ?: 0f
-                ICS213Message(
-                    sender = msg.sender,
-                    timestamp = tsFmt.format(msg.timestamp),
-                    text = if (msg.content.length > 120) msg.content.take(120) + "…"
-                           else msg.content,
-                    confidencePct = (confidence * 100).toInt()
-                )
-            }
+            priority = catPriority,
+            messages = consolidateMessages(catMessages, classificationCache, tsFmt)
         )
     }
 
     return ICS213ReportData(
-        from = "@$currentUserNickname · $currentChannel",
-        date = dateFmt.format(now),
-        time = timeFmt.format(now) + " UTC",
+        messageNumber = messageNumber,
+        from = currentUserNickname,
+        date = dateFmt.format(now).let {
+            // re-format with dashes: yyyyMMdd → yyyy-MM-dd
+            "${it.substring(0,4)}-${it.substring(4,6)}-${it.substring(6,8)}"
+        },
+        time = timeDisplayFmt.format(now) + " UTC",
         peersConnected = peersConnected,
         channel = currentChannel,
         classifierVersion = "CompositeClassifier v1.0",
         categories = categories
+    )
+}
+
+/**
+ * Groups messages by sender and merges those within [CONSOLIDATE_WINDOW_MS]
+ * of each other into a single [ICS213Message] entry.
+ *
+ * Result is sorted by the timestamp of the first message in each group.
+ */
+private fun consolidateMessages(
+    catMessages: List<BitchatMessage>,
+    classificationCache: Map<String, ClassificationResult>,
+    tsFmt: SimpleDateFormat
+): List<ICS213Message> {
+    if (catMessages.isEmpty()) return emptyList()
+
+    // Group by sender, preserving time order within each group.
+    val bySender = catMessages
+        .sortedBy { it.timestamp }
+        .groupBy { it.sender }
+
+    // (firstTimestamp, ICS213Message) pairs so we can re-sort across senders afterward.
+    val result = mutableListOf<Pair<Long, ICS213Message>>()
+
+    for ((_, senderMessages) in bySender) {
+        val sorted = senderMessages.sortedBy { it.timestamp }
+        var windowGroup = mutableListOf(sorted.first())
+
+        for (k in 1 until sorted.size) {
+            val msg = sorted[k]
+            val gap = msg.timestamp.time - windowGroup.last().timestamp.time
+            if (gap <= CONSOLIDATE_WINDOW_MS) {
+                windowGroup.add(msg)
+            } else {
+                result.add(windowGroup.first().timestamp.time to
+                    buildIcs213Message(windowGroup, classificationCache, tsFmt))
+                windowGroup = mutableListOf(msg)
+            }
+        }
+        // Flush the last window.
+        result.add(windowGroup.first().timestamp.time to
+            buildIcs213Message(windowGroup, classificationCache, tsFmt))
+    }
+
+    return result.sortedBy { it.first }.map { it.second }
+}
+
+/** Merges a consolidated group of messages into one [ICS213Message]. */
+private fun buildIcs213Message(
+    group: List<BitchatMessage>,
+    classificationCache: Map<String, ClassificationResult>,
+    tsFmt: SimpleDateFormat
+): ICS213Message {
+    val maxConf = group.mapNotNull { classificationCache[it.id]?.confidence }.maxOrNull() ?: 0f
+    val firstTs = tsFmt.format(group.first().timestamp)
+    val tsStr = if (group.size > 1)
+        "$firstTs–${tsFmt.format(group.last().timestamp)}"
+    else
+        firstTs
+
+    // Each message capped at 80 chars; combined total capped at 200.
+    val combined = group
+        .joinToString(" / ") { msg ->
+            msg.content.let { if (it.length > 80) it.take(80) + "…" else it }
+        }
+        .let { if (it.length > 200) it.take(200) + "…" else it }
+
+    return ICS213Message(
+        sender = group.first().sender,
+        timestamp = tsStr,
+        text = combined,
+        confidencePct = (maxConf * 100).toInt()
     )
 }

@@ -389,4 +389,9 @@
   <string name="verify_success_title">Проверено</string>
   <string name="verify_success_body">Вы проверили %1$s</string>
   <string name="verify_success_system_message">проверен %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ Режим максимальной производительности</string>
+    <string name="power_mode_balanced">🔋 Сбалансированный режим энергии</string>
+    <string name="power_mode_power_saver">🪫 Режим экономии заряда</string>
+    <string name="power_mode_ultra_low_power">🔴 Критический заряд — пассивный режим</string>
 </resources>

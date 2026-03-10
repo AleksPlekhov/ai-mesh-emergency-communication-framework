@@ -450,4 +450,9 @@
     <item quantity="other">%d people</item>
   </plurals>
 
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ Performance mode</string>
+    <string name="power_mode_balanced">🔋 Balanced power mode</string>
+    <string name="power_mode_power_saver">🪫 Battery saving mode</string>
+    <string name="power_mode_ultra_low_power">🔴 Critical battery — passive mode</string>
 </resources>

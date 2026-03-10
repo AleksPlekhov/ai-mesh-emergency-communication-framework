@@ -386,4 +386,9 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ მაღალი წარმადობის რეჟიმი</string>
+    <string name="power_mode_balanced">🔋 დაბალანსებული ენერგიის რეჟიმი</string>
+    <string name="power_mode_power_saver">🪫 ბატარეის დაზოგვის რეჟიმი</string>
+    <string name="power_mode_ultra_low_power">🔴 კრიტიკული დამუხტვა — პასიური რეჟიმი</string>
 </resources>

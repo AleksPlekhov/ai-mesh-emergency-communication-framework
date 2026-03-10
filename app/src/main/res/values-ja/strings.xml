@@ -399,4 +399,9 @@
   <string name="verify_success_title">検証済み</string>
   <string name="verify_success_body">%1$s を検証しました</string>
   <string name="verify_success_system_message">%1$s を検証しました</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ 高パフォーマンスモード</string>
+    <string name="power_mode_balanced">🔋 バランスモード</string>
+    <string name="power_mode_power_saver">🪫 省電力モード</string>
+    <string name="power_mode_ultra_low_power">🔴 バッテリー残量わずか — パッシブモード</string>
 </resources>

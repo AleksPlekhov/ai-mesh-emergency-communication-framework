@@ -38,5 +38,10 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ உயர் செயல்திறன் பயன்முறை</string>
+    <string name="power_mode_balanced">🔋 சமநிலை ஆற்றல் பயன்முறை</string>
+    <string name="power_mode_power_saver">🪫 பேட்டரி சேமிப்பு பயன்முறை</string>
+    <string name="power_mode_ultra_low_power">🔴 முக்கியமான சார்ஜ் — செயலற்ற பயன்முறை</string>
 </resources>
 

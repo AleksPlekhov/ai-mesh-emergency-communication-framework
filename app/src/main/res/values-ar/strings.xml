@@ -399,4 +399,9 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ وضع الأداء العالي</string>
+    <string name="power_mode_balanced">🔋 وضع الطاقة المتوازن</string>
+    <string name="power_mode_power_saver">🪫 وضع توفير البطارية</string>
+    <string name="power_mode_ultra_low_power">🔴 بطارية حرجة — الوضع السلبي</string>
 </resources>

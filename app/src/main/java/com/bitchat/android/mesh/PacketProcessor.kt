@@ -1,6 +1,7 @@
 package com.bitchat.android.mesh
 
 import android.util.Log
+import com.bitchat.android.ai.energy.EnergyMode
 import com.bitchat.android.protocol.BitchatPacket
 import com.bitchat.android.protocol.MessageType
 import com.bitchat.android.model.RoutedPacket
@@ -33,6 +34,15 @@ class PacketProcessor(private val myPeerID: String) {
     
     // Packet relay manager for centralized relay decisions
     private val packetRelayManager = PacketRelayManager(myPeerID)
+
+    /**
+     * Current energy mode forwarded from [BluetoothConnectionManager] whenever
+     * [PowerManager] triggers [onPowerModeChanged].  Setting this automatically
+     * updates the inner [PacketRelayManager] used for relay decisions.
+     */
+    var energyMode: EnergyMode
+        get() = packetRelayManager.energyMode
+        set(value) { packetRelayManager.energyMode = value }
     
     // Coroutines
     private val processorScope = CoroutineScope(Dispatchers.IO + SupervisorJob())

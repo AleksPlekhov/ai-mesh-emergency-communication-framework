@@ -399,4 +399,9 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ 고성능 모드</string>
+    <string name="power_mode_balanced">🔋 균형 전원 모드</string>
+    <string name="power_mode_power_saver">🪫 배터리 절약 모드</string>
+    <string name="power_mode_ultra_low_power">🔴 배터리 위험 — 수동 모드</string>
 </resources>

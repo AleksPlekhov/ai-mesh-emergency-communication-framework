@@ -38,5 +38,10 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ Режим максимальної продуктивності</string>
+    <string name="power_mode_balanced">🔋 Збалансований режим енергії</string>
+    <string name="power_mode_power_saver">🪫 Режим економії заряду</string>
+    <string name="power_mode_ultra_low_power">🔴 Критичний заряд — пасивний режим</string>
 </resources>
 

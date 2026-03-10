@@ -2,6 +2,8 @@ package com.bitchat.android.mesh
 import com.bitchat.android.protocol.MessageType
 
 import android.util.Log
+import com.bitchat.android.ai.energy.EnergyMode
+import com.bitchat.android.ai.energy.EnergyRelayPolicy
 import com.bitchat.android.model.RoutedPacket
 import com.bitchat.android.protocol.BitchatPacket
 import com.bitchat.android.util.toHexString
@@ -29,7 +31,14 @@ class PacketRelayManager(private val myPeerID: String) {
     
     // Delegate for callbacks
     var delegate: PacketRelayManagerDelegate? = null
-    
+
+    /**
+     * Current energy mode supplied by [BluetoothConnectionManager] whenever
+     * [PowerManager] fires [onPowerModeChanged].  Defaults to BALANCED so
+     * existing behaviour is preserved before the first mode update arrives.
+     */
+    var energyMode: EnergyMode = EnergyMode.BALANCED
+
     // Coroutines
     private val relayScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
@@ -129,37 +138,33 @@ class PacketRelayManager(private val myPeerID: String) {
     }
     
     /**
-     * Determine if we should relay this packet based on type and network conditions
+     * Determine if we should relay this packet based on network conditions
+     * and the current local energy state.
+     *
+     * Two tiers:
+     *  • High-TTL (≥ 4) — critical / SOS packets.  Always relayed unless the
+     *    battery is in ULTRA_LOW_POWER, where a 20 % chance keeps this node
+     *    as a last-resort forwarder without draining the final reserve.
+     *  • Normal packets — probability = networkFactor × energyMultiplier.
+     *    At ULTRA_LOW_POWER the multiplier is 0.0, putting the node into
+     *    passive (receive-only) mode for non-critical traffic.
      */
     private fun shouldRelayPacket(packet: BitchatPacket, fromPeerID: String): Boolean {
-        // Always relay if TTL is high enough (indicates important message)
-        if (packet.ttl >= 4u) {
-            Log.d(TAG, "High TTL (${packet.ttl}), relaying")
-            return true
-        }
-        
-        // Get network size for adaptive relay probability
         val networkSize = delegate?.getNetworkSize() ?: 1
-        
-        // Small networks always relay to ensure connectivity
-        if (networkSize <= 3) {
-            Log.d(TAG, "Small network (${networkSize} peers), relaying")
-            return true
+
+        // ── Critical path: high-TTL packets (SOS / MAYDAY / CRITICAL) ───────
+        if (packet.ttl >= 4u) {
+            val prob = EnergyRelayPolicy.criticalRelayProbability(energyMode)
+            val decision = Random.nextFloat() < prob
+            Log.d(TAG, "High TTL (${packet.ttl}), energyMode=$energyMode, critProb=$prob → $decision")
+            return decision
         }
-        
-        // Apply adaptive relay probability based on network size
-        val relayProb = when {
-            networkSize <= 10 -> 1.0    // Always relay in small networks
-            networkSize <= 30 -> 0.85   // High probability for medium networks
-            networkSize <= 50 -> 0.7    // Moderate probability
-            networkSize <= 100 -> 0.55  // Lower probability for large networks
-            else -> 0.4                 // Lowest probability for very large networks
-        }
-        
-        val shouldRelay = Random.nextDouble() < relayProb
-        Log.d(TAG, "Network size: ${networkSize}, Relay probability: ${relayProb}, Decision: ${shouldRelay}")
-        
-        return shouldRelay
+
+        // ── Normal path: network-size × energy attenuation ───────────────────
+        val prob = EnergyRelayPolicy.relayProbability(networkSize, energyMode)
+        val decision = Random.nextFloat() < prob
+        Log.d(TAG, "networkSize=$networkSize energyMode=$energyMode prob=$prob → $decision")
+        return decision
     }
     
     /**
@@ -174,11 +179,15 @@ class PacketRelayManager(private val myPeerID: String) {
      * Get debug information
      */
     fun getDebugInfo(): String {
+        val networkSize = delegate?.getNetworkSize() ?: 0
         return buildString {
             appendLine("=== Packet Relay Manager Debug Info ===")
             appendLine("Relay Scope Active: ${relayScope.isActive}")
             appendLine("My Peer ID: ${myPeerID}")
-            appendLine("Network Size: ${delegate?.getNetworkSize() ?: "unknown"}")
+            appendLine("Network Size: $networkSize")
+            appendLine("Energy Mode: $energyMode")
+            appendLine("Normal Relay Prob: ${EnergyRelayPolicy.relayProbability(networkSize, energyMode)}")
+            appendLine("Critical Relay Prob: ${EnergyRelayPolicy.criticalRelayProbability(energyMode)}")
         }
     }
     

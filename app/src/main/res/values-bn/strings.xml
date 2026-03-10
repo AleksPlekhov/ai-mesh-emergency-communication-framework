@@ -386,4 +386,9 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ উচ্চ কর্মক্ষমতা মোড</string>
+    <string name="power_mode_balanced">🔋 সুষম শক্তি মোড</string>
+    <string name="power_mode_power_saver">🪫 ব্যাটারি সাশ্রয় মোড</string>
+    <string name="power_mode_ultra_low_power">🔴 সংকটাপন্ন চার্জ — প্যাসিভ মোড</string>
 </resources>

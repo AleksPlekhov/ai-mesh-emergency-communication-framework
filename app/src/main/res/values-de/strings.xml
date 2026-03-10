@@ -400,4 +400,9 @@
   <string name="verify_success_title">Verifiziert</string>
   <string name="verify_success_body">Du hast %1$s verifiziert</string>
   <string name="verify_success_system_message">verifiziert %1$s</string>
+    <!-- Power mode change notifications -->
+    <string name="power_mode_performance">⚡ Hochleistungsmodus</string>
+    <string name="power_mode_balanced">🔋 Ausgewogener Energiemodus</string>
+    <string name="power_mode_power_saver">🪫 Energiesparmodus</string>
+    <string name="power_mode_ultra_low_power">🔴 Kritischer Akku — passiver Modus</string>
 </resources>

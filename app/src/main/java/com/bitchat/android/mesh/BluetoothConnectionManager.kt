@@ -2,7 +2,11 @@ package com.bitchat.android.mesh
 
 import android.bluetooth.*
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
+import com.bitchat.android.ai.energy.EnergyMode
 import com.bitchat.android.model.RoutedPacket
 import com.bitchat.android.protocol.BitchatPacket
 import kotlinx.coroutines.*
@@ -84,7 +88,15 @@ class BluetoothConnectionManager(
     
     // Delegate for callbacks
     var delegate: BluetoothConnectionManagerDelegate? = null
-    
+
+    /**
+     * Optional callback invoked on the connection coroutine scope whenever
+     * [PowerManager] changes power mode.  Callers (e.g. [BluetoothMeshService])
+     * use this to propagate [EnergyMode] to [PacketRelayManager] without
+     * coupling the two subsystems directly.
+     */
+    var onEnergyModeChanged: ((EnergyMode) -> Unit)? = null
+
     // Public property for address-peer mapping
     val addressPeerMap get() = connectionTracker.addressPeerMap
 
@@ -394,11 +406,11 @@ class BluetoothConnectionManager(
     
     override fun onPowerModeChanged(newMode: PowerManager.PowerMode) {
         Log.i(TAG, "Power mode changed to: $newMode")
-        
+
         connectionScope.launch {
             // Avoid rapid scan restarts by checking if we need to change scan behavior
             val wasUsingDutyCycle = powerManager.shouldUseDutyCycle()
-            
+
             // Update advertising with new power settings if server enabled
             val serverEnabled = try { com.bitchat.android.ui.debug.DebugSettingsManager.getInstance().gattServerEnabled.value } catch (_: Exception) { true }
             if (serverEnabled) {
@@ -406,7 +418,7 @@ class BluetoothConnectionManager(
             } else {
                 serverManager.stop()
             }
-            
+
             // Only restart scanning if the duty cycle behavior changed
             val nowUsingDutyCycle = powerManager.shouldUseDutyCycle()
             if (wasUsingDutyCycle != nowUsingDutyCycle) {
@@ -420,10 +432,33 @@ class BluetoothConnectionManager(
             } else {
                 Log.d(TAG, "Duty cycle behavior unchanged, keeping existing scan state")
             }
-            
+
             // Enforce connection limits
             enforceStrictLimits()
+
+            // Propagate energy mode to relay policy layer
+            onEnergyModeChanged?.invoke(newMode.toEnergyMode())
+
+            // Notify the user about the mode change via a short Toast (localised)
+            val toastResId = when (newMode) {
+                PowerManager.PowerMode.PERFORMANCE     -> com.bitchat.android.R.string.power_mode_performance
+                PowerManager.PowerMode.BALANCED        -> com.bitchat.android.R.string.power_mode_balanced
+                PowerManager.PowerMode.POWER_SAVER     -> com.bitchat.android.R.string.power_mode_power_saver
+                PowerManager.PowerMode.ULTRA_LOW_POWER -> com.bitchat.android.R.string.power_mode_ultra_low_power
+            }
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context.applicationContext, toastResId, Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    // Maps Android power mode to the AI-module energy mode enum.
+    // Kept private here so :disastermesh-ai stays free of Android dependencies.
+    private fun PowerManager.PowerMode.toEnergyMode(): EnergyMode = when (this) {
+        PowerManager.PowerMode.PERFORMANCE    -> EnergyMode.PERFORMANCE
+        PowerManager.PowerMode.BALANCED       -> EnergyMode.BALANCED
+        PowerManager.PowerMode.POWER_SAVER    -> EnergyMode.POWER_SAVER
+        PowerManager.PowerMode.ULTRA_LOW_POWER -> EnergyMode.ULTRA_LOW_POWER
     }
     
     override fun onScanStateChanged(shouldScan: Boolean) {

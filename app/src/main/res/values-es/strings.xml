@@ -399,9 +399,4 @@
   <string name="verify_success_title">Verificado</string>
   <string name="verify_success_body">Verificaste a %1$s</string>
   <string name="verify_success_system_message">verificado %1$s</string>
-    <!-- Power mode change notifications -->
-    <string name="power_mode_performance">⚡ Modo de alto rendimiento</string>
-    <string name="power_mode_balanced">🔋 Modo de energía equilibrado</string>
-    <string name="power_mode_power_saver">🪫 Modo ahorro de batería</string>
-    <string name="power_mode_ultra_low_power">🔴 Batería crítica — modo pasivo</string>
 </resources>

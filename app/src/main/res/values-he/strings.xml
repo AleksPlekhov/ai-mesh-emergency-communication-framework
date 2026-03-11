@@ -51,10 +51,5 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
-    <!-- Power mode change notifications -->
-    <string name="power_mode_performance">⚡ מצב ביצועים גבוהים</string>
-    <string name="power_mode_balanced">🔋 מצב אנרגיה מאוזן</string>
-    <string name="power_mode_power_saver">🪫 מצב חיסכון בסוללה</string>
-    <string name="power_mode_ultra_low_power">🔴 סוללה קריטית — מצב פסיבי</string>
 </resources>
 

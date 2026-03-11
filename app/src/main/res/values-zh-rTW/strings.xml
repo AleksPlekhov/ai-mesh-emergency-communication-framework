@@ -51,10 +51,5 @@
   <string name="verify_success_title">已验证</string>
   <string name="verify_success_body">你已验证 %1$s</string>
   <string name="verify_success_system_message">已验证 %1$s</string>
-    <!-- Power mode change notifications -->
-    <string name="power_mode_performance">⚡ 高效能模式</string>
-    <string name="power_mode_balanced">🔋 均衡電源模式</string>
-    <string name="power_mode_power_saver">🪫 省電模式</string>
-    <string name="power_mode_ultra_low_power">🔴 電量危急 — 被動模式</string>
 </resources>
 

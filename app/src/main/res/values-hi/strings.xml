@@ -399,9 +399,4 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
-    <!-- Power mode change notifications -->
-    <string name="power_mode_performance">⚡ उच्च प्रदर्शन मोड</string>
-    <string name="power_mode_balanced">🔋 संतुलित ऊर्जा मोड</string>
-    <string name="power_mode_power_saver">🪫 बैटरी बचत मोड</string>
-    <string name="power_mode_ultra_low_power">🔴 गंभीर चार्ज — निष्क्रिय मोड</string>
 </resources>

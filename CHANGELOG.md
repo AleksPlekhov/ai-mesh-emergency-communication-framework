@@ -30,15 +30,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **BLE Priority Queue** — `BluetoothPacketBroadcaster` actor replaced with `java.util.PriorityQueue` + `Mutex` + `CONFLATED` signal; CRITICAL packets preempt all queued NORMAL/LOW packets at the radio layer
 - `RoutedPacket.priority: Int` field (default 2 = NORMAL); `sendMessage()` classifies content with `KeywordMessageClassifier` synchronously and sets priority before enqueuing
 - `PriorityQueueBenchmarkTest` — 5 JUnit tests proving CRITICAL latency improvement; benchmark output: 1001× faster delivery vs FIFO with 1 000 queued packets at 100 µs/packet
-- **AI Energy Management (Feature 6 — first iteration)** — relay probability now adapts to the device's battery state without Wi-Fi Direct or protocol changes:
-  - `EnergyMode` enum in `:disastermesh-ai` (PERFORMANCE / BALANCED / POWER_SAVER / ULTRA_LOW_POWER) mirrors `PowerManager.PowerMode` without creating a cross-module Android dependency
-  - `EnergyRelayPolicy` (`:disastermesh-ai`) — pure Kotlin policy engine combining `networkFactor(networkSize)` × `energyMultiplier(EnergyMode)` for normal packets; separate `criticalRelayProbability()` for high-TTL SOS/MAYDAY packets that always relay (0.20 at ULTRA_LOW_POWER as last-resort forwarder)
-  - `PacketRelayManager.energyMode` — new field; `shouldRelayPacket()` now delegates entirely to `EnergyRelayPolicy`; debug info includes current energy mode and both relay probabilities
-  - `PacketProcessor.energyMode` — delegating property forwarding to `PacketRelayManager`
-  - `BluetoothConnectionManager.onEnergyModeChanged` — nullable callback invoked on every `PowerManager` mode change; maps `PowerMode → EnergyMode` via private extension without coupling `:disastermesh-ai` to Android types
-  - `BluetoothMeshService.setupDelegates()` — wires the callback: `connectionManager.onEnergyModeChanged = { mode -> packetProcessor.energyMode = mode }`
-  - `EnergyRelayPolicyTest` — 21 JUnit tests covering all boundary values, all enum combinations, passive-mode invariant (ULTRA_LOW_POWER → 0.0 normal / 0.2 critical), and monotonicity of both axes
-  - `BluetoothConnectionManager.onPowerModeChanged()` now shows a short `Toast` on the main thread whenever the power mode changes automatically; message is fully localised — 4 string resources (`power_mode_performance`, `power_mode_balanced`, `power_mode_power_saver`, `power_mode_ultra_low_power`) added to all 35 `strings.xml` files (en, uk, ru, de, fr, es, it, pt, pt-rBR, pl, nl, sv, tr, ar, fa, he, ur, pa-rPK, hi, bn, ne, ta, ja, ko, zh, zh-rCN, zh-rTW, th, vi, id, ms, fil, ka, mg); uses `Handler(Looper.getMainLooper())` to marshal from the IO coroutine scope
 
 ### Fixed
 - `ICS213ReportScreen`: WebView dependency removed from the report preview entirely; the form is now rendered as a pure Compose `LazyColumn` directly from `ICS213ReportData` (white background, monospace font, priority badges, signature blocks); this eliminates the Android 11 Trichrome crash where `Package not found: com.google.android.webview` prevented the report from showing at all

@@ -413,9 +413,4 @@
   <string name="verify_success_title">Vérifié</string>
   <string name="verify_success_body">Vous avez vérifié %1$s</string>
   <string name="verify_success_system_message">vérifié %1$s</string>
-    <!-- Power mode change notifications -->
-    <string name="power_mode_performance">⚡ Mode haute performance</string>
-    <string name="power_mode_balanced">🔋 Mode énergie équilibré</string>
-    <string name="power_mode_power_saver">🪫 Mode économie de batterie</string>
-    <string name="power_mode_ultra_low_power">🔴 Batterie critique — mode passif</string>
 </resources>

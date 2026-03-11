@@ -399,9 +399,4 @@
   <string name="verify_success_title">Verified</string>
   <string name="verify_success_body">You verified %1$s</string>
   <string name="verify_success_system_message">verified %1$s</string>
-    <!-- Power mode change notifications -->
-    <string name="power_mode_performance">⚡ High performance mode</string>
-    <string name="power_mode_balanced">🔋 Balanced na mode ng enerhiya</string>
-    <string name="power_mode_power_saver">🪫 Mode ng pagtitipid ng baterya</string>
-    <string name="power_mode_ultra_low_power">🔴 Kritikal na baterya — passive mode</string>
 </resources>

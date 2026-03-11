@@ -614,12 +614,6 @@ class BluetoothMeshService(private val context: Context) {
                 }
             }
         }
-
-        // Propagate PowerManager energy mode changes to the relay policy layer
-        connectionManager.onEnergyModeChanged = { mode ->
-            packetProcessor.energyMode = mode
-            Log.d(TAG, "Energy mode updated: $mode → relay policy adjusted")
-        }
     }
     
     /**

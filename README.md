@@ -1,4 +1,4 @@
-# DisasterMesh AI Framework
+# ResQMesh AI Framework
 
 > **An open-source Android framework extending BLE mesh communication with on-device AI capabilities for disaster response and emergency communication.**
 
@@ -11,7 +11,7 @@
 
 ## Overview
 
-**DisasterMesh AI Framework** is a research-driven Android framework built on top of the [BitChat](https://github.com/permissionlesstech/bitchat-android) open-source BLE mesh messaging protocol. It extends core mesh communication with an **on-device AI layer** specifically designed for disaster response scenarios where internet infrastructure is unavailable or destroyed.
+**ResQMesh AI Framework** is a research-driven Android framework built on top of the [BitChat](https://github.com/permissionlesstech/bitchat-android) open-source BLE mesh messaging protocol. It extends core mesh communication with an **on-device AI layer** specifically designed for disaster response scenarios where internet infrastructure is unavailable or destroyed.
 
 During natural disasters — hurricanes, earthquakes, wildfires — traditional communication infrastructure fails precisely when it is needed most. This framework addresses that critical gap by combining:
 
@@ -27,7 +27,7 @@ This project directly supports U.S. national priorities in **emergency preparedn
 
 In disaster zones, communication breakdown is one of the leading causes of preventable casualties. Existing solutions have critical limitations:
 
-| Problem | Current State | DisasterMesh AI Approach |
+| Problem | Current State | ResQMesh AI Approach |
 |---|---|---|
 | Message overload | All messages treated equally | AI prioritizes by criticality |
 | Injured/disabled users | Text-only input | Offline speech recognition |
@@ -41,7 +41,7 @@ In disaster zones, communication breakdown is one of the leading causes of preve
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│              DisasterMesh AI Framework               │
+│              ResQMesh AI Framework               │
 ├─────────────────────────────────────────────────────┤
 │  [M1] AI Message        │  [M2] Offline Speech      │
 │  Priority Classifier    │  Recognition (STT)        │
@@ -62,7 +62,7 @@ The project uses a multi-module Gradle build to cleanly separate AI concerns fro
 
 ```
 :app                        — Android application (UI, mesh, crypto, routing)
-:disastermesh-ai            — All AI/ML functionality (self-contained library)
+:resqmesh-ai            — All AI/ML functionality (self-contained library)
     ├── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
     └── ai/classifier/      — Message priority classification
           ├── KeywordMessageClassifier   (~90 FEMA/ICS keywords across 9 categories, always available)
@@ -71,7 +71,7 @@ The project uses a multi-module Gradle build to cleanly separate AI concerns fro
           └── MessageClassifierFactory   (selects best available backend at runtime)
 ```
 
-The `:disastermesh-ai` module is an Android library with no dependency on `:app`, keeping AI code independently testable and reusable.
+The `:resqmesh-ai` module is an Android library with no dependency on `:app`, keeping AI code independently testable and reusable.
 
 ---
 
@@ -170,7 +170,7 @@ Intelligently manages radio interface switching and node role assignment to maxi
 
 **Phase 1 — Core AI Framework (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
-- ✅ `:disastermesh-ai` Gradle module — dedicated AI library module, independent of `:app`
+- ✅ `:resqmesh-ai` Gradle module — dedicated AI library module, independent of `:app`
 - ✅ M1: Keyword classifier — ~90 FEMA/ICS keyword rules across 9 emergency categories
 - ✅ M1: TFLite classifier — neural model stub ready (drop in `.tflite` asset to activate)
 - ✅ M1: `CompositeMessageClassifier` — keyword-first, TFLite fallback two-stage pipeline
@@ -210,9 +210,9 @@ This framework addresses priorities identified by multiple U.S. federal initiati
 |---|---|---|
 | Language | Kotlin | — |
 | UI Framework | Jetpack Compose + Material Design 3 | `:app` |
-| AI/ML Runtime | TensorFlow Lite 2.14 | `:disastermesh-ai` |
-| Speech Recognition | Vosk Android 0.3.47 (offline) | `:disastermesh-ai` |
-| Message Classifier | Composite pipeline: keyword rules + TFLite model | `:disastermesh-ai` |
+| AI/ML Runtime | TensorFlow Lite 2.14 | `:resqmesh-ai` |
+| Speech Recognition | Vosk Android 0.3.47 (offline) | `:resqmesh-ai` |
+| Message Classifier | Composite pipeline: keyword rules + TFLite model | `:resqmesh-ai` |
 | Mesh Transport | Bluetooth Low Energy (BLE) | `:app` |
 | Encryption | Noise Protocol Framework | `:app` |
 | Mesh Routing | Multi-hop flood routing with Bloom Filter deduplication | `:app` |
@@ -300,4 +300,4 @@ In accordance with GPL-3.0 requirements, this project is derived from [BitChat A
 
 ---
 
-*DisasterMesh AI Framework is an independent research project. It is not affiliated with FEMA, NSF, or any U.S. government agency.*
+*ResQMesh AI Framework is an independent research project. It is not affiliated with FEMA, NSF, or any U.S. government agency.*

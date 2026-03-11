@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Required for Vosk offline STT -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Required for Vosk model download -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+</manifest>

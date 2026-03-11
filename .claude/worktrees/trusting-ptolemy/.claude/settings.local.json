@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew tasks --all)",
+      "Bash(git add app/build.gradle.kts app/src/main/java/com/bitchat/android/ui/InputComponents.kt app/src/main/java/com/bitchat/android/ui/VoiceInputComponents.kt app/src/main/res/values/strings.xml gradle/libs.versions.toml settings.gradle.kts app/src/main/java/com/bitchat/android/features/voice/VoskManager.kt .claude/launch.json)",
+      "Bash(git commit:*)",
+      "Bash(git push -u origin claude/trusting-ptolemy)",
+      "Bash(gh pr:*)",
+      "Bash(git remote get-url origin)"
+    ]
+  }
+}

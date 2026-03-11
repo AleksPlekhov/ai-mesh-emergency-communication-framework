@@ -147,7 +147,7 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // AI module (voice STT, message classifier, and future AI features)
-    implementation(project(":disastermesh-ai"))
+    implementation(project(":resqmesh-ai"))
 
     // Testing
     testImplementation(libs.bundles.testing)

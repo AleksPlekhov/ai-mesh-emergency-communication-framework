@@ -453,7 +453,7 @@ class BluetoothConnectionManager(
     }
 
     // Maps Android power mode to the AI-module energy mode enum.
-    // Kept private here so :disastermesh-ai stays free of Android dependencies.
+    // Kept private here so :resqmesh-ai stays free of Android dependencies.
     private fun PowerManager.PowerMode.toEnergyMode(): EnergyMode = when (this) {
         PowerManager.PowerMode.PERFORMANCE    -> EnergyMode.PERFORMANCE
         PowerManager.PowerMode.BALANCED       -> EnergyMode.BALANCED

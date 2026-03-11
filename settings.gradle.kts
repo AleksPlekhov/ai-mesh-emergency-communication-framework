@@ -17,7 +17,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "disastermesh-android"
+rootProject.name = "resqmesh-android"
 include(":app")
-include(":disastermesh-ai")
+include(":resqmesh-ai")
 // Using published Arti AAR; local module not included

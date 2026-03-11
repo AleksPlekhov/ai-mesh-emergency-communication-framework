@@ -6,12 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
 
-# Changelog — DisasterMesh
+# Changelog — ResQMesh
 
 ## [0.1.0] - 2026-03-09
 
 ### Added
-- `:disastermesh-ai` Gradle library module — all AI/ML code extracted from `:app`, independently testable
+- `:resqmesh-ai` Gradle library module — all AI/ML code extracted from `:app`, independently testable
 - `KeywordMessageClassifier` — ~90 FEMA/ICS keyword rules across 9 emergency categories (MEDICAL, FIRE, FLOOD, COLLAPSE, SECURITY, WEATHER, MISSING_PERSON, INFRASTRUCTURE, RESOURCE_REQUEST)
 - `TFLiteMessageClassifier` — on-device neural classifier; auto-activates when `message_classifier.tflite` asset is present
 - `CompositeMessageClassifier` — keyword-first pipeline with TFLite fallback; keyword results bypass confidence threshold for CRITICAL/HIGH priority
@@ -21,21 +21,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Offline speech-to-text (`VoskTranscribeButton`) integrated into the chat input bar
 - Emergency Feed 🚨 button moved to the header, right of the peer counter; shows live emergency message count (`👥 2  🚨 3`) for ambient situational awareness
 - Tap any message in `CategoryMessagesScreen` to dismiss the overlay and jump to that message in the main chat
-- `ICS213ReportData` + `ICS213ReportGenerator` — FEMA ICS-213 General Message form rendered as self-contained HTML; pure Kotlin, no Android deps, unit-testable in `:disastermesh-ai`
+- `ICS213ReportData` + `ICS213ReportGenerator` — FEMA ICS-213 General Message form rendered as self-contained HTML; pure Kotlin, no Android deps, unit-testable in `:resqmesh-ai`
 - `ICS213PrintHelper` — loads report into a headless `WebView` and triggers Android `PrintManager` (Save as PDF / physical printer)
 - `ICS213ReportScreen` — full-screen Compose preview with black/green header and Share button; white background for print legibility
 - "GENERATE ICS-213 REPORT" button pinned at the bottom of `EmergencyFeedSheet`; hidden when the Feed is empty
-- `EmergencyClassification.kt` (`:disastermesh-ai`) — canonical `shouldShowEmergencyBadge()` and `shouldShowPossibleBadge()` predicates; `categoryEmojiAndLabel()` extracted from `:app` into the AI module
+- `EmergencyClassification.kt` (`:resqmesh-ai`) — canonical `shouldShowEmergencyBadge()` and `shouldShowPossibleBadge()` predicates; `categoryEmojiAndLabel()` extracted from `:app` into the AI module
 - `LocationAttachSheet` — optional GPS / manual address attachment for CRITICAL and HIGH messages; appended as `📍 lat,lon` to message body; location never pre-filled
 - **BLE Priority Queue** — `BluetoothPacketBroadcaster` actor replaced with `java.util.PriorityQueue` + `Mutex` + `CONFLATED` signal; CRITICAL packets preempt all queued NORMAL/LOW packets at the radio layer
 - `RoutedPacket.priority: Int` field (default 2 = NORMAL); `sendMessage()` classifies content with `KeywordMessageClassifier` synchronously and sets priority before enqueuing
 - `PriorityQueueBenchmarkTest` — 5 JUnit tests proving CRITICAL latency improvement; benchmark output: 1001× faster delivery vs FIFO with 1 000 queued packets at 100 µs/packet
 - **AI Energy Management (Feature 6 — first iteration)** — relay probability now adapts to the device's battery state without Wi-Fi Direct or protocol changes:
-  - `EnergyMode` enum in `:disastermesh-ai` (PERFORMANCE / BALANCED / POWER_SAVER / ULTRA_LOW_POWER) mirrors `PowerManager.PowerMode` without creating a cross-module Android dependency
-  - `EnergyRelayPolicy` (`:disastermesh-ai`) — pure Kotlin policy engine combining `networkFactor(networkSize)` × `energyMultiplier(EnergyMode)` for normal packets; separate `criticalRelayProbability()` for high-TTL SOS/MAYDAY packets that always relay (0.20 at ULTRA_LOW_POWER as last-resort forwarder)
+  - `EnergyMode` enum in `:resqmesh-ai` (PERFORMANCE / BALANCED / POWER_SAVER / ULTRA_LOW_POWER) mirrors `PowerManager.PowerMode` without creating a cross-module Android dependency
+  - `EnergyRelayPolicy` (`:resqmesh-ai`) — pure Kotlin policy engine combining `networkFactor(networkSize)` × `energyMultiplier(EnergyMode)` for normal packets; separate `criticalRelayProbability()` for high-TTL SOS/MAYDAY packets that always relay (0.20 at ULTRA_LOW_POWER as last-resort forwarder)
   - `PacketRelayManager.energyMode` — new field; `shouldRelayPacket()` now delegates entirely to `EnergyRelayPolicy`; debug info includes current energy mode and both relay probabilities
   - `PacketProcessor.energyMode` — delegating property forwarding to `PacketRelayManager`
-  - `BluetoothConnectionManager.onEnergyModeChanged` — nullable callback invoked on every `PowerManager` mode change; maps `PowerMode → EnergyMode` via private extension without coupling `:disastermesh-ai` to Android types
+  - `BluetoothConnectionManager.onEnergyModeChanged` — nullable callback invoked on every `PowerManager` mode change; maps `PowerMode → EnergyMode` via private extension without coupling `:resqmesh-ai` to Android types
   - `BluetoothMeshService.setupDelegates()` — wires the callback: `connectionManager.onEnergyModeChanged = { mode -> packetProcessor.energyMode = mode }`
   - `EnergyRelayPolicyTest` — 21 JUnit tests covering all boundary values, all enum combinations, passive-mode invariant (ULTRA_LOW_POWER → 0.0 normal / 0.2 critical), and monotonicity of both axes
   - `BluetoothConnectionManager.onPowerModeChanged()` now shows a short `Toast` on the main thread whenever the power mode changes automatically; message is fully localised — 4 string resources (`power_mode_performance`, `power_mode_balanced`, `power_mode_power_saver`, `power_mode_ultra_low_power`) added to all 35 `strings.xml` files (en, uk, ru, de, fr, es, it, pt, pt-rBR, pl, nl, sv, tr, ar, fa, he, ur, pa-rPK, hi, bn, ne, ta, ja, ko, zh, zh-rCN, zh-rTW, th, vi, id, ms, fil, ka, mg); uses `Handler(Looper.getMainLooper())` to marshal from the IO coroutine scope

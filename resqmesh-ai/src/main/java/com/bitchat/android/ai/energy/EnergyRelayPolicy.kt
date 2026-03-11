@@ -39,7 +39,7 @@ enum class EnergyMode {
  *     - [criticalRelayProbability] — high-TTL (CRITICAL / SOS) packets that
  *       bypass the network factor but are still attenuated at ULTRA_LOW_POWER
  *
- * Module placement: :disastermesh-ai (no Android deps) per CLAUDE.md §9.
+ * Module placement: :resqmesh-ai (no Android deps) per CLAUDE.md §9.
  */
 object EnergyRelayPolicy {
 

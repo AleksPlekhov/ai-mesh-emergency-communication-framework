@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DisasterMesh</string>
+    <string name="app_name">ResQMesh</string>
 
     <!-- Mga dahilan ng permiso -->
     <string name="permission_bluetooth_rationale">Kailangan ang permiso sa Bluetooth para sa direktang pag‑usap kahit walang internet.</string>
@@ -280,7 +280,7 @@
     <string name="grant_permissions">Payagan</string>
     <string name="location_tracking_warning">HINDI sinusubaybayan ng bitchat ang lokasyon mo</string>
     <string name="at_symbol">@</string>
-    <string name="app_brand">DisasterMesh/</string>
+    <string name="app_brand">ResQMesh/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="geohash_people_header">TAO</string>
     <string name="nobody_around">walang tao sa paligid…</string>

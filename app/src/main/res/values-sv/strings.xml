@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DisasterMesh</string>
+    <string name="app_name">ResQMesh</string>
     <string name="permission_bluetooth_rationale">Bluetooth-behörighet krävs för direktmeddelanden utan internet.</string>
     <string name="permission_location_rationale">Platsbehörighet krävs för att hitta enheter i närheten via Bluetooth.</string>
     <string name="permission_notification_rationale">Aviseringsbehörighet krävs för att meddela nya meddelanden.</string>
@@ -264,7 +264,7 @@
     <string name="grant_permissions">Ge behörigheter</string>
     <string name="location_tracking_warning">bitchat spårar INTE din plats</string>
     <string name="at_symbol">@</string>
-    <string name="app_brand">DisasterMesh/</string>
+    <string name="app_brand">ResQMesh/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="geohash_people_header">PERSONER</string>
     <string name="nobody_around">ingen i närheten…</string>

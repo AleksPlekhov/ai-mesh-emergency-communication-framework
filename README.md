@@ -1,6 +1,6 @@
-# ResQMesh AI Framework
+# ResQMesh AI Platform
 
-> **An open-source Android framework extending BLE mesh communication with on-device AI capabilities for disaster response and emergency communication.**
+> **An open-source Android platform applying on-device machine learning to emergency communication over offline BLE mesh networks for disaster response.**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/Platform-Android%208.0%2B-green.svg)](https://developer.android.com)
@@ -11,9 +11,9 @@
 
 ## Overview
 
-**ResQMesh AI Framework** is a research-driven Android framework built on top of the [BitChat](https://github.com/permissionlesstech/bitchat-android) open-source BLE mesh messaging protocol. It extends core mesh communication with an **on-device AI layer** specifically designed for disaster response scenarios where internet infrastructure is unavailable or destroyed.
+**ResQMesh AI Platform** is a research-driven Android platform built on top of the [BitChat](https://github.com/permissionlesstech/bitchat-android) open-source BLE mesh messaging protocol. It extends core mesh communication with an **on-device AI layer** specifically designed for disaster response scenarios where internet infrastructure is unavailable or destroyed.
 
-During natural disasters — hurricanes, earthquakes, wildfires — traditional communication infrastructure fails precisely when it is needed most. This framework addresses that critical gap by combining:
+During natural disasters — hurricanes, earthquakes, wildfires — traditional communication infrastructure fails precisely when it is needed most. This platform addresses that critical gap by combining:
 
 - **Decentralized BLE mesh networking** — no internet, no servers, no single point of failure
 - **On-device AI inference** — intelligent decisions made locally, without cloud dependency
@@ -41,7 +41,7 @@ In disaster zones, communication breakdown is one of the leading causes of preve
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│              ResQMesh AI Framework               │
+│              ResQMesh AI Platform                │
 ├─────────────────────────────────────────────────────┤
 │  [M1] AI Message        │  [M2] Offline Speech      │
 │  Priority Classifier    │  Recognition (STT)        │
@@ -63,12 +63,20 @@ The project uses a multi-module Gradle build to cleanly separate AI concerns fro
 ```
 :app                        — Android application (UI, mesh, crypto, routing)
 :resqmesh-ai            — All AI/ML functionality (self-contained library)
-    ├── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
-    └── ai/classifier/      — Message priority classification
-          ├── KeywordMessageClassifier   (~90 FEMA/ICS keywords across 9 categories, always available)
-          ├── TFLiteMessageClassifier    (neural model, activated by dropping .tflite asset)
-          ├── CompositeMessageClassifier (keyword-first → TFLite fallback pipeline)
-          └── MessageClassifierFactory   (selects best available backend at runtime)
+    ├── ai/classifier/      — Message priority classification
+    │     ├── KeywordMessageClassifier   (~90 FEMA/ICS keywords across 9 categories, always available)
+    │     ├── TFLiteMessageClassifier    (neural model, activated by dropping .tflite asset)
+    │     ├── CompositeMessageClassifier (keyword-first → TFLite fallback pipeline)
+    │     └── MessageClassifierFactory   (selects best available backend at runtime)
+    ├── ai/emergency/       — Emergency badge predicates and category label helpers
+    │     └── EmergencyClassification    (shouldShowEmergencyBadge, categoryEmojiAndLabel)
+    ├── ai/energy/          — Battery-aware relay policy (no Android SDK dependency)
+    │     ├── EnergyMode                 (PERFORMANCE / BALANCED / POWER_SAVER / ULTRA_LOW_POWER)
+    │     └── EnergyRelayPolicy          (networkFactor × energyMultiplier; critical relay floor)
+    ├── ai/report/          — FEMA ICS-213 report data and HTML generator
+    │     ├── ICS213ReportData           (structured data classes for the ICS-213 form)
+    │     └── ICS213ReportGenerator      (pure HTML renderer, no Android deps, unit-testable)
+    └── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
 ```
 
 The `:resqmesh-ai` module is an Android library with no dependency on `:app`, keeping AI code independently testable and reusable.
@@ -138,15 +146,49 @@ Enables voice-to-text message input without internet connectivity, using on-devi
 
 ---
 
+### BLE Priority Queue — Radio-Level Emergency Preemption
+
+Ensures that life-critical messages are transmitted before routine traffic even at the radio layer, eliminating head-of-line blocking caused by large queues of low-priority packets.
+
+**Implementation:**
+- `BluetoothPacketBroadcaster` replaced with a `java.util.PriorityQueue` + `Mutex` + `CONFLATED` signal actor
+- Every outgoing packet carries a `priority: Int` field on `RoutedPacket` (default 2 = NORMAL); set synchronously by `KeywordMessageClassifier` inside `sendMessage()` before the packet is enqueued
+- CRITICAL packets are dequeued ahead of all NORMAL and LOW packets, regardless of arrival order
+- **Benchmark result:** 1001× faster delivery for CRITICAL messages vs FIFO with 1,000 queued packets at 100 µs/packet (`PriorityQueueBenchmarkTest`)
+
+**Why it matters:** A CRITICAL SOS message queued behind a routine status update could arrive minutes later in a high-traffic mesh. Radio-level preemption closes that gap to near-zero.
+
+---
+
+### Emergency Location Attachment
+
+Allows users to voluntarily attach their GPS location or a typed address to CRITICAL and HIGH priority messages, enabling coordinators to pinpoint distress signals on a map.
+
+**Implementation:**
+- `LocationAttachSheet` — bottom sheet triggered automatically when the classifier detects a CRITICAL or HIGH message
+- Offers GPS coordinates (via Android `FusedLocationProviderClient`) or free-text address entry
+- Location appended to the message body as `📍 lat,lon`; never pre-filled to preserve user privacy
+- ICS-213 report extracts and preserves location data per incident row
+
+**Why it matters:** Knowing *where* an emergency is occurring is as critical as knowing *what* the emergency is. Voluntary location sharing eliminates the need for rescuers to ask follow-up questions under time pressure.
+
+---
+
 ### M3 — FEMA ICS-213 Situation Report Generator
 
 Automatically aggregates prioritized messages from across the mesh network and generates structured situation reports compatible with the **FEMA Incident Command System (ICS-213)** General Message standard.
 
+**Implementation:**
+- `ICS213ReportData` — structured data classes capturing incident metadata (sender, timestamp, category, priority, location, message body)
+- `ICS213ReportGenerator` — pure Kotlin HTML renderer; no Android dependencies; unit-testable in `:resqmesh-ai`
+- `ICS213ReportScreen` — full-screen Compose preview rendering the form as a `LazyColumn` (white background, monospace font, priority badges, signature blocks); no WebView dependency, avoiding the Android 11 Trichrome crash
+- `ICS213PrintHelper` — loads the generated HTML into a headless `WebView` and triggers the Android `PrintManager` (Save as PDF or physical printer); gracefully falls back to sharing the HTML via `FileProvider` if WebView is unavailable
+- "GENERATE ICS-213 REPORT" button pinned at the bottom of the Emergency Feed sheet; hidden when the feed is empty
+
 **Output includes:**
-- Active mesh node count and network topology summary
-- Incident count by priority category
-- Geographic clustering of distress signals (when location sharing enabled)
-- Timestamp-indexed event log
+- Incident log grouped by emergency category and priority
+- Per-incident: sender, timestamp, full message body, and GPS coordinates (when attached)
+- Shareable HTML document compatible with any browser for printing
 
 **Why it matters:** Emergency coordinators need structured, actionable information — not raw message feeds. ICS-213 compatibility ensures reports integrate directly into existing federal and state emergency management workflows.
 
@@ -154,13 +196,19 @@ Automatically aggregates prioritized messages from across the mesh network and g
 
 ### M4 — AI Energy Optimizer
 
-Intelligently manages radio interface switching and node role assignment to maximize mesh network lifetime under battery constraints.
+Intelligently manages radio relay decisions based on battery state to maximize mesh network lifetime under power constraints. The first iteration is complete and active; advanced Wi-Fi Direct switching is planned for Phase 2.
 
-**Capabilities:**
+**First iteration — battery-aware relay policy (complete):**
+- `EnergyMode` enum (PERFORMANCE / BALANCED / POWER_SAVER / ULTRA_LOW_POWER) mirrors `PowerManager.PowerMode` without creating a cross-module Android dependency
+- `EnergyRelayPolicy` — pure Kotlin policy engine: relay probability = `networkFactor(networkSize)` × `energyMultiplier(EnergyMode)`; computed independently for each queued packet
+- CRITICAL/SOS packets always relay regardless of battery mode — minimum 0.20 relay probability at ULTRA_LOW_POWER, ensuring last-resort forwarding survives even nearly-dead devices
+- `PacketRelayManager` delegates relay decisions entirely to `EnergyRelayPolicy`; energy mode is updated live via `BluetoothConnectionManager.onEnergyModeChanged` callback wired in `BluetoothMeshService`
+- Power mode change notifications shown as toasts; fully localised across all 35 supported languages
+
+**Planned (Phase 2):**
 - Adaptive BLE scan interval based on network traffic patterns
-- Dynamic switching between BLE and Wi-Fi Direct based on bandwidth requirements and battery level
-- AI-driven relay node selection — assigns relay responsibility to devices with higher battery reserves
-- Passive mode transition for critically low-battery devices while maintaining mesh participation
+- Dynamic switching between BLE and Wi-Fi Direct based on bandwidth requirements
+- Protocol-level battery metadata broadcasting so coordinators see node health across the mesh
 
 **Why it matters:** In prolonged disaster scenarios (multi-day events), battery life is a critical constraint. Extending network lifetime by even 20-30% can be the difference between maintaining communication during critical rescue windows.
 
@@ -168,7 +216,7 @@ Intelligently manages radio interface switching and node role assignment to maxi
 
 ## Roadmap
 
-**Phase 1 — Core AI Framework (current, 0–3 months):**
+**Phase 1 — Core AI Platform (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
 - ✅ `:resqmesh-ai` Gradle module — dedicated AI library module, independent of `:app`
 - ✅ M1: Keyword classifier — ~90 FEMA/ICS keyword rules across 9 emergency categories
@@ -177,8 +225,10 @@ Intelligently manages radio interface switching and node role assignment to maxi
 - ✅ M1: Real-time visual indicators — category-coloured left stripes and emoji badges on every classified message; theme-aware (Material3 light/dark)
 - ✅ M1: Emergency Feed — always-visible feed button opens a priority-sorted category sheet; category detail view shows filtered messages with system back navigation
 - ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
-- 🔄 M3: FEMA ICS-213 Report Generator — automated situation reports compatible with federal emergency standards
-- 🔄 M4: AI Energy Optimizer — adaptive BLE/Wi-Fi switching and intelligent relay node management
+- ✅ BLE Priority Queue — CRITICAL packets preempt NORMAL/LOW at the radio layer; 1001× faster delivery proven by benchmark
+- ✅ Emergency Location Attachment — optional GPS / manual address appended to CRITICAL and HIGH messages via `LocationAttachSheet`
+- ✅ M3: FEMA ICS-213 Report Generator — Compose-rendered report with share/print support; pure-Kotlin HTML generator in `:resqmesh-ai`
+- ✅ M4: AI Energy Optimizer (first iteration) — `EnergyRelayPolicy` adapts relay probability to battery state; CRITICAL packets always relay even at ULTRA_LOW_POWER
 
 **Phase 2 (6–12 months):**
 - Spatial pattern detection — geographic clustering of incident reports with visual heatmap
@@ -195,7 +245,7 @@ Intelligently manages radio interface switching and node role assignment to maxi
 
 ## National Importance & Research Context
 
-This framework addresses priorities identified by multiple U.S. federal initiatives:
+This platform addresses priorities identified by multiple U.S. federal initiatives:
 
 - **White House 2024 Critical and Emerging Technologies List** — *Integrated Communication and Networking Technologies* explicitly includes mesh networks and infrastructure-independent communication technologies
 - **NSF RINGS Program** — $37M investment in resilient next-generation networking systems
@@ -246,7 +296,7 @@ git clone https://github.com/AleksPlekhov/ai-mesh-emergency-communication-framew
 
 ## Based On
 
-This framework extends **BitChat Android** ([permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android)), an open-source BLE mesh messaging application released under GPL-3.0. The core BLE mesh transport, Noise Protocol encryption, and multi-hop routing are derived from BitChat. The AI inference layer, speech recognition module, FEMA reporting system, and energy optimization components are original contributions of this project.
+This platform extends **BitChat Android** ([permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android)), an open-source BLE mesh messaging application released under GPL-3.0. The core BLE mesh transport, Noise Protocol encryption, and multi-hop routing are derived from BitChat. The AI inference layer, speech recognition module, FEMA reporting system, and energy optimization components are original contributions of this project.
 
 In accordance with GPL-3.0, this project is released under the same license and all source code is publicly available.
 
@@ -276,7 +326,7 @@ Please open an issue before submitting a pull request for significant changes.
 ## Author
 
 **Oleksandr Pliekhov**
-Lead Android & Mesh Developer | Researcher
+Android & Mesh Systems Researcher | Lead Developer
 Charlotte, North Carolina, USA
 
 *Research focus: AI-enhanced offline communication systems for emergency response*
@@ -300,4 +350,4 @@ In accordance with GPL-3.0 requirements, this project is derived from [BitChat A
 
 ---
 
-*ResQMesh AI Framework is an independent research project. It is not affiliated with FEMA, NSF, or any U.S. government agency.*
+*ResQMesh AI Platform is an independent research project. It is not affiliated with FEMA, NSF, or any U.S. government agency.*

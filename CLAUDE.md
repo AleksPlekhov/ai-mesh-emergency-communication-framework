@@ -1,4 +1,4 @@
-# Claude Code Instructions — DisasterMesh AI / BitChat Android
+# Claude Code Instructions — ResQMesh AI / BitChat Android
 
 > **Effective: March 2026**  
 > **Project:** Decentralized BLE mesh messenger with on-device AI for disaster response.  
@@ -18,7 +18,7 @@ A privacy-focused, off-grid communication Android app combining:
 ### Multi-Module Structure
 ```
 :app                    — Main Android app (UI, mesh, crypto, Nostr)
-:disastermesh-ai        — AI library module (TFLite, Vosk STT)
+:resqmesh-ai        — AI library module (TFLite, Vosk STT)
 docs/                   — Architecture specs (file_transfer.md, SOURCE_ROUTING.md, etc.)
 ```
 
@@ -65,7 +65,7 @@ docs/                   — Architecture specs (file_transfer.md, SOURCE_ROUTING
 | `features/media/` | Media handling |
 | `util/` | Extensions, constants, binary encoding |
 
-### AI Module (`disastermesh-ai/src/main/java/com/bitchat/android/ai/`)
+### AI Module (`resqmesh-ai/src/main/java/com/bitchat/android/ai/`)
 
 | Package | Responsibility |
 |---------|----------------|
@@ -157,7 +157,7 @@ ui/theme/Theme.kt       — Material 3 color scheme
 ### Common Commands
 ```bash
 ./gradlew :app:assembleDebug              # Build debug APK
-./gradlew :disastermesh-ai:test           # Run AI module unit tests
+./gradlew :resqmesh-ai:test           # Run AI module unit tests
 ./gradlew :app:test                       # Run app unit tests
 ./gradlew :app:connectedAndroidTest       # Instrumented tests (device required)
 ./gradlew lint                            # Lint check
@@ -170,7 +170,7 @@ Add new dependencies there, reference in build scripts as `implementation(libs.x
 
 ### Testing Strategy
 - **Unit tests**: `app/src/test/kotlin/` — business logic, crypto, protocols
-- **AI tests**: `disastermesh-ai/src/test/` — classifier tests with Robolectric
+- **AI tests**: `resqmesh-ai/src/test/` — classifier tests with Robolectric
 - **Integration tests**: `app/src/androidTest/` — minimal, requires BLE hardware
 
 **Note**: BLE is difficult to mock. Focus tests on protocol parsing, crypto, and state machines. Use `Robolectric` for tests needing Android resources.
@@ -215,17 +215,17 @@ All mesh components use `android.util.Log` with consistent tags:
 
 ### Module Placement Rule (MANDATORY)
 
-> **New code with no Android framework or Jetpack Compose dependencies MUST go in `:disastermesh-ai`.**
+> **New code with no Android framework or Jetpack Compose dependencies MUST go in `:resqmesh-ai`.**
 
 | Code type | Module |
 |-----------|--------|
-| Pure Kotlin logic, data classes, algorithms | `:disastermesh-ai` |
-| Functions that use `ClassificationResult`, `MessagePriority` | `:disastermesh-ai` |
-| HTML/report generators with no Android deps | `:disastermesh-ai` |
+| Pure Kotlin logic, data classes, algorithms | `:resqmesh-ai` |
+| Functions that use `ClassificationResult`, `MessagePriority` | `:resqmesh-ai` |
+| HTML/report generators with no Android deps | `:resqmesh-ai` |
 | Compose UI, `Context`, `View`, Android SDK types | `:app` |
 | BLE, crypto, Nostr, mesh networking | `:app` |
 
-Examples already in `:disastermesh-ai`: `ICS213ReportData`, `ICS213ReportGenerator`, `shouldShowEmergencyBadge`, `categoryEmojiAndLabel`.
+Examples already in `:resqmesh-ai`: `ICS213ReportData`, `ICS213ReportGenerator`, `shouldShowEmergencyBadge`, `categoryEmojiAndLabel`.
 
 ### Classifier System
 ```
@@ -291,7 +291,7 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 2. Check `AGENTS.md` for architectural constraints
 3. Verify permission requirements for new features
 4. Test with both BLE enabled and disabled
-5. **Module placement**: place new code in `:disastermesh-ai` if it has no Android/Compose deps (see Section 9)
+5. **Module placement**: place new code in `:resqmesh-ai` if it has no Android/Compose deps (see Section 9)
 
 ### After Making Changes
 1. **Update `CHANGELOG.md`** — mandatory after every completed feature or bug fix.

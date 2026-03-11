@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DisasterMesh</string>
+    <string name="app_name">ResQMesh</string>
 
     <!-- اجازات کی وضاحت -->
     <string name="permission_bluetooth_rationale">بلوٹوتھ کی اجازت انٹرنیٹ کے بغیر دوسروں سے براہ راست چیٹ کرنے کے لیے ضروری ہے۔</string>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DisasterMesh</string>
+    <string name="app_name">ResQMesh</string>
 
     <!-- Raisons des autorisations -->
     <string name="permission_bluetooth_rationale">L’autorisation Bluetooth est requise pour discuter en pair à pair sans internet.</string>
@@ -281,7 +281,7 @@
     <string name="grant_permissions">Accorder les autorisations</string>
     <string name="location_tracking_warning">bitchat ne suit PAS ta position</string>
     <string name="at_symbol">@</string>
-    <string name="app_brand">DisasterMesh/</string>
+    <string name="app_brand">ResQMesh/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="geohash_people_header">PERSONNES</string>
     <string name="nobody_around">personne aux alentours…</string>

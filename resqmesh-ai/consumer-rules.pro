@@ -1,4 +1,4 @@
-# Consumer ProGuard rules for :disastermesh-ai
+# Consumer ProGuard rules for :resqmesh-ai
 # These rules are applied to apps that consume this library.
 
 # Keep TFLite model classes

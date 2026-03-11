@@ -14,7 +14,7 @@ import org.junit.Test
  *   ✅ passive-mode invariant — ULTRA_LOW_POWER → 0.0 for normal traffic
  *   ✅ full-power invariant  — PERFORMANCE/BALANCED → factor unchanged
  *
- * Run: ./gradlew :disastermesh-ai:test
+ * Run: ./gradlew :resqmesh-ai:test
  */
 class EnergyRelayPolicyTest {
 

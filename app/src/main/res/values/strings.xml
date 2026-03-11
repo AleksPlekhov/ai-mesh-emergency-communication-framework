@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DisasterMesh</string>
+    <string name="app_name">ResQMesh</string>
     <string name="permission_bluetooth_rationale">Bluetooth permission is required for peer-to-peer messaging without internet.</string>
     <string name="permission_location_rationale">Location permission is required to discover nearby devices via Bluetooth.</string>
     <string name="permission_notification_rationale">Notification permission is required to alert you of new messages.</string>
@@ -364,7 +364,7 @@
   <string name="grant_permissions">Grant Permissions</string>
   <string name="location_tracking_warning">bitchat does NOT track your location</string>
   <string name="at_symbol">@</string>
-  <string name="app_brand">DisasterMesh/</string>
+  <string name="app_brand">ResQMesh/</string>
   <string name="channel_count_prefix"> · ⧉ </string>
   <string name="geohash_people_header">PEOPLE</string>
   <string name="nobody_around">nobody around...</string>

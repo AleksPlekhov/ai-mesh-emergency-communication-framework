@@ -4,7 +4,7 @@ package com.bitchat.android.ai.report
  * Root data transfer object for an ICS-213 General Message report.
  *
  * All fields are plain Kotlin types — no Android framework dependencies —
- * so this class is independently unit-testable in the :disastermesh-ai module.
+ * so this class is independently unit-testable in the :resqmesh-ai module.
  */
 data class ICS213ReportData(
     /** Tracking ID, e.g. "DM-20260308-2217". */

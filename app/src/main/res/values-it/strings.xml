@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DisasterMesh</string>
+    <string name="app_name">ResQMesh</string>
 
     <!-- Spiegazioni dei permessi -->
     <string name="permission_bluetooth_rationale">Il permesso Bluetooth è necessario per la messaggistica peer-to-peer senza internet.</string>
@@ -340,7 +340,7 @@
 
     <!-- Simboli e stringhe speciali -->
     <string name="at_symbol">@</string>
-    <string name="app_brand">DisasterMesh/</string>
+    <string name="app_brand">ResQMesh/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="mention_suggestion_at">@%1$s</string>
     <string name="image_counter">%1$d / %2$d</string>

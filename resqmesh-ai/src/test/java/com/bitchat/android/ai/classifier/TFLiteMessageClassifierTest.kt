@@ -25,7 +25,7 @@ import java.io.File
  *   instantiated on the JVM.  Full model inference is covered by the
  *   instrumented tests in src/androidTest (run on emulator or device).
  *
- * Run: ./gradlew :disastermesh-ai:testDebugUnitTest
+ * Run: ./gradlew :resqmesh-ai:testDebugUnitTest
  */
 class TFLiteMessageClassifierTest {
 

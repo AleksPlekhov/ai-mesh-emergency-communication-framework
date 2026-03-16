@@ -7,6 +7,12 @@
 [![Language](https://img.shields.io/badge/Language-Kotlin-orange.svg)](https://kotlinlang.org)
 [![Status](https://img.shields.io/badge/Status-Active%20Research-yellow.svg)]()
 
+
+<img width="216" height="444" alt="Screen_2" src="https://github.com/user-attachments/assets/168ed689-c291-4f0f-8e14-a34ef299dec4" />
+<img width="216" height="444" alt="Screen_2" src="https://github.com/user-attachments/assets/f3040038-c0a7-4957-90d9-21021ed32a67" />
+<img width="216" height="456" alt="Screen_3" src="https://github.com/user-attachments/assets/3ce837c9-6de1-4c57-8845-7e464a395f98" />
+
+
 ---
 
 ## Overview

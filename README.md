@@ -311,9 +311,8 @@ In accordance with GPL-3.0, this project is released under the same license and 
 
 ## Research & Publications
 
+- **[Published — March 25, 2026]** "[When the Internet Dies, Your Phone Can Still Be Smart: Building AI-Powered Disaster Communication](https://hackernoon.com/when-the-internet-dies-your-phone-can-still-be-smart-building-ai-powered-disaster-communication)" — HackerNoon
 - *[Preprint — coming soon]* "AI-Driven Message Prioritization for Offline BLE Mesh Networks in Disaster Response Scenarios" — arXiv
-
-*This section will be updated as research outputs are published.*
 
 ---
 

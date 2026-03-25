@@ -44,6 +44,7 @@ import com.bitchat.android.nostr.PoWPreferenceManager
 import com.bitchat.android.services.VerificationService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.bitchat.android.ai.runLatencyBenchmark
 
 class MainActivity : OrientationAwareActivity() {
 
@@ -76,7 +77,9 @@ class MainActivity : OrientationAwareActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+        // Run only for debug use case
+        //runLatencyBenchmark(this)
+
         // Register receiver for force finish signal from shutdown coordinator
         val filter = android.content.IntentFilter(com.bitchat.android.util.AppConstants.UI.ACTION_FORCE_FINISH)
         if (android.os.Build.VERSION.SDK_INT >= 33) {

@@ -281,7 +281,7 @@ This platform addresses priorities identified by multiple U.S. federal initiativ
 
 ```bash
 # Clone the repository
-git clone https://github.com/AleksPlekhov/ai-mesh-emergency-communication-framework.git
+git clone https://github.com/AleksPlekhov/ai-mesh-emergency-communication-platform.git
 
 # Open in Android Studio
 # File → Open → select project directory

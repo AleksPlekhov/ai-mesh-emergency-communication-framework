@@ -117,7 +117,7 @@ Classifies incoming mesh messages into priority tiers and emergency categories u
 
 **Two-stage classifier pipeline (`CompositeMessageClassifier`):**
 1. **`KeywordMessageClassifier`** — ~90 FEMA/ICS keyword rules run first. If a `CRITICAL` or `HIGH` priority keyword matches, the result is returned immediately with deterministic, high-confidence output.
-2. **`TFLiteMessageClassifier`** — Lightweight neural model (MobileBERT-style) runs as fallback for messages that don't match keywords. Activated automatically when `message_classifier.tflite` is placed in module assets. Confidence threshold: 30%.
+2. **`TFLiteMessageClassifier`** — Lightweight neural model (MobileBERT-style) runs as fallback for messages that don't match keywords. Activated automatically when `emergency_model.tflite` is present in module assets — included by default. Confidence threshold: 25%.
 
 `MessageClassifierFactory` selects `CompositeMessageClassifier` (keyword + TFLite) when a model asset is present, or `KeywordMessageClassifier` alone otherwise, ensuring the system degrades gracefully on constrained hardware.
 
@@ -226,7 +226,7 @@ Intelligently manages radio relay decisions based on battery state to maximize m
 - ✅ Project forked from BitChat Android (GPL-3.0)
 - ✅ `:resqmesh-ai` Gradle module — dedicated AI library module, independent of `:app`
 - ✅ M1: Keyword classifier — ~90 FEMA/ICS keyword rules across 9 emergency categories
-- ✅ M1: TFLite classifier — neural model stub ready (drop in `.tflite` asset to activate)
+- ✅ M1: TFLite classifier — `emergency_model.tflite` included in assets; CompositeClassifier active out of the box
 - ✅ M1: `CompositeMessageClassifier` — keyword-first, TFLite fallback two-stage pipeline
 - ✅ M1: Real-time visual indicators — category-coloured left stripes and emoji badges on every classified message; theme-aware (Material3 light/dark)
 - ✅ M1: Emergency Feed — always-visible feed button opens a priority-sorted category sheet; category detail view shows filtered messages with system back navigation

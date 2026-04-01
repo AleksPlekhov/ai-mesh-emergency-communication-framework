@@ -15,7 +15,7 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
 
         versionCode = 32
-        versionName = "0.0.1"
+        versionName = "0.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -110,6 +110,9 @@ dependencies {
     // QR
     implementation(libs.zxing.core)
     implementation(libs.mlkit.barcode.scanning)
+
+    // ML Kit Image Labeling — bundled (offline, no Play Services required)
+    implementation(libs.mlkit.image.labeling)
 
     // CameraX
     implementation(libs.androidx.camera.camera2)

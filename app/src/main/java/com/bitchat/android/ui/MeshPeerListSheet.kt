@@ -851,7 +851,6 @@ fun PrivateChatSheet(
                             )
                         )
                     }
-
                     ChatInputSection(
                         messageText = messageText,
                         onMessageTextChange = { newText ->
@@ -873,6 +872,13 @@ fun PrivateChatSheet(
                         },
                         onSendFileNote = { peer, channel, path ->
                             viewModel.sendFileNote(peer, channel, path)
+                        },
+                        onSceneAnalyzed = { description, _, _ ->
+                            // Image is never sent when ML Kit returns labels.
+                            messageText = androidx.compose.ui.text.input.TextFieldValue(
+                                text = description,
+                                selection = androidx.compose.ui.text.TextRange(description.length)
+                            )
                         },
                         showCommandSuggestions = false,
                         commandSuggestions = emptyList(),

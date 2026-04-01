@@ -51,6 +51,7 @@ zxing-core = "3.5.4"
 # CameraX / ML Kit
 camerax = "1.5.2"
 mlkit-barcode = "17.3.0"
+mlkit-image-labeling = "17.0.9"
 
 # Testing
 junit = "4.13.2"
@@ -134,6 +135,7 @@ androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.r
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
 androidx-camera-compose = { module = "androidx.camera:camera-compose", version.ref = "camerax" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode" }
+mlkit-image-labeling = { module = "com.google.mlkit:image-labeling", version.ref = "mlkit-image-labeling" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }

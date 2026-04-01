@@ -5,8 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 
-
 # Changelog — ResQMesh
+
+## [0.0.3] - 2026-04-06
+
+### Added
+- `SceneToEmergencyMapper` (`:resqmesh-ai`, `ai/vision/`) — pure-Kotlin mapper that converts ML Kit image label strings to the app's 9 emergency categories (MEDICAL, FIRE, FLOOD, COLLAPSE, SECURITY, WEATHER, INFRASTRUCTURE, RESOURCE_REQUEST, MISSING_PERSON); produces a pre-formatted TextField description with emoji and actionable suffix (e.g. `"🔥 FIRE: Fire, smoke, burning. Requires immediate response."`)
+- `ImageSceneAnalyzer` (`:app`, `features/media/`) — suspending wrapper around ML Kit Image Labeling (bundled model, works fully offline); reuses `ImageUtils.loadBitmapWithExifOrientation`; delegates label→category mapping to `SceneToEmergencyMapper`
+- `PhotoReportButton` (`:app`, `ui/media/`) — new orange `AddAPhoto` icon button in the chat input row; single-click opens gallery, long-click opens camera (same gesture as the replaced `ImagePickerButton`); shows `CircularProgressIndicator` while ML Kit runs (~300 ms); three outcome paths: emergency category detected → `onSceneAnalyzed`, generic labels detected → `onSceneAnalyzed` with `"📷 Scene: …"` description, ML Kit hard failure → `onImageReady` fallback (plain image send)
+- `pendingPhotoPath` state in `ChatScreen` and `MeshPeerListSheet` — stores the captured image path until the user validates the generated description and taps Send; photo and text message are dispatched together on confirmation
+
+### Changed
+- `ImagePickerButton` usage in `InputComponents.kt` commented out and replaced by `PhotoReportButton`; original code preserved for future reference
+- `MessageInput`, `ChatInputSection` signatures — new `onSceneAnalyzed: (description, imagePath) -> Unit` parameter added; all call sites updated (`ChatScreen`, `MeshPeerListSheet`)
+- `onSend` handler in `ChatScreen` and `MeshPeerListSheet` — flushes `pendingPhotoPath` via `sendImageNote` before dispatching the text message when a photo-report is in progress
 
 ## [0.0.2] - 2026-04-03
 

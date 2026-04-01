@@ -44,6 +44,7 @@ import com.bitchat.android.ai.voice.AudioWaveformExtractor
 import com.bitchat.android.ui.media.RealtimeScrollingWaveform
 import com.bitchat.android.ui.media.ImagePickerButton
 import com.bitchat.android.ui.media.FilePickerButton
+import com.bitchat.android.ui.media.PhotoReportButton
 
 /**
  * Input components for ChatScreen
@@ -168,6 +169,7 @@ fun MessageInput(
     onSendVoiceNote: (String?, String?, String) -> Unit,
     onSendImageNote: (String?, String?, String) -> Unit,
     onSendFileNote: (String?, String?, String) -> Unit,
+    onSceneAnalyzed: (description: String, imagePath: String, emergencyType: String) -> Unit,
     selectedPrivatePeer: String?,
     currentChannel: String?,
     nickname: String,
@@ -179,9 +181,11 @@ fun MessageInput(
     val hasText = value.text.isNotBlank() // Check if there's text for send button state
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    var isRecording by remember { mutableStateOf(false) }
-    var elapsedMs by remember { mutableStateOf(0L) }
-    var amplitude by remember { mutableStateOf(0) }
+    // VoiceRecordButton removed — isRecording / elapsedMs / amplitude no longer needed.
+    // Kept as comments for reference; do not delete.
+    // var isRecording by remember { mutableStateOf(false) }
+    // var elapsedMs by remember { mutableStateOf(0L) }
+    // var amplitude by remember { mutableStateOf(0) }
 
     Row(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp), // Reduced padding
@@ -200,7 +204,7 @@ fun MessageInput(
                     color = colorScheme.primary,
                     fontFamily = FontFamily.Monospace
                 ),
-                cursorBrush = SolidColor(if (isRecording) Color.Transparent else colorScheme.primary),
+                cursorBrush = SolidColor(colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { 
                     if (hasText) onSend() // Only send if there's text
@@ -216,8 +220,7 @@ fun MessageInput(
                     }
             )
 
-            // Show placeholder when there's no text and not recording
-            if (value.text.isEmpty() && !isRecording) {
+            if (value.text.isEmpty()) {
                 Text(
                     text = stringResource(R.string.type_a_message_placeholder),
                     style = MaterialTheme.typography.bodyMedium.copy(
@@ -228,97 +231,87 @@ fun MessageInput(
                 )
             }
 
-            // Overlay the real-time scrolling waveform while recording
-            if (isRecording) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    RealtimeScrollingWaveform(
-                        modifier = Modifier.weight(1f).height(32.dp),
-                        amplitudeNorm = normalizeAmplitudeSample(amplitude)
-                    )
-                    Spacer(Modifier.width(20.dp))
-                    val secs = (elapsedMs / 1000).toInt()
-                    val mm = secs / 60
-                    val ss = secs % 60
-                    val maxSecs = 10 // 10 second max recording time
-                    val maxMm = maxSecs / 60
-                    val maxSs = maxSecs % 60
-                    Text(
-                        text = String.format("%02d:%02d / %02d:%02d", mm, ss, maxMm, maxSs),
-                        fontFamily = FontFamily.Monospace,
-                        color = colorScheme.primary,
-                        fontSize = (BASE_FONT_SIZE - 4).sp
-                    )
-                }
-            }
+            // ── DISABLED: real-time waveform overlay (was shown while VoiceRecordButton active) ──
+            // if (isRecording) {
+            //     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            //         RealtimeScrollingWaveform(
+            //             modifier = Modifier.weight(1f).height(32.dp),
+            //             amplitudeNorm = normalizeAmplitudeSample(amplitude)
+            //         )
+            //         Spacer(Modifier.width(20.dp))
+            //         val secs = (elapsedMs / 1000).toInt()
+            //         val mm = secs / 60; val ss = secs % 60
+            //         val maxSecs = 10; val maxMm = maxSecs / 60; val maxSs = maxSecs % 60
+            //         Text(
+            //             text = String.format("%02d:%02d / %02d:%02d", mm, ss, maxMm, maxSs),
+            //             fontFamily = FontFamily.Monospace, color = colorScheme.primary,
+            //             fontSize = (BASE_FONT_SIZE - 4).sp
+            //         )
+            //     }
+            // }
         }
         Spacer(modifier = Modifier.width(8.dp)) // Reduced spacing
         
-        // Voice and image buttons when no text (only visible in Mesh chat)
+        // Media buttons — visible when no text is typed (only in Mesh chat)
         if (value.text.isEmpty() && showMediaButtons) {
-            // Hold-to-record microphone
             val bg = if (colorScheme.background == Color.Black) Color(0xFF00FF00).copy(alpha = 0.75f) else Color(0xFF008000).copy(alpha = 0.75f)
 
-            // Ensure latest values are used when finishing recording
             val latestSelectedPeer = rememberUpdatedState(selectedPrivatePeer)
             val latestChannel = rememberUpdatedState(currentChannel)
-            val latestOnSendVoiceNote = rememberUpdatedState(onSendVoiceNote)
 
-            // Image button (image picker) - hide during recording
-            if (!isRecording) {
-                // Revert to original separate buttons: round File button (left) and the old Image plus button (right)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    // DISABLE FILE PICKER
-                    //FilePickerButton(
-                    //    onFileReady = { path ->
-                    //        onSendFileNote(latestSelectedPeer.value, latestChannel.value, path)
-                    //    }
-                    //)
-                    ImagePickerButton(
-                        onImageReady = { outPath ->
-                            onSendImageNote(latestSelectedPeer.value, latestChannel.value, outPath)
-                        }
-                    )
-                }
+            // ── PhotoReportButton — ML Kit scene analysis ─────────────────────────────────
+            // Single click: gallery  |  Long click: camera
+            // Analyzes image → fills TextField with emergency description.
+            // Falls back to plain image send if ML Kit returns no labels.
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                // ── DISABLED: plain ImagePickerButton (sends image as attachment directly) ──
+                // Replaced by PhotoReportButton. Kept for reference — do not delete.
+                // ImagePickerButton(onImageReady = { outPath ->
+                //     onSendImageNote(latestSelectedPeer.value, latestChannel.value, outPath)
+                // })
+                //
+                // DISABLED: FilePickerButton
+                // FilePickerButton(onFileReady = { path ->
+                //     onSendFileNote(latestSelectedPeer.value, latestChannel.value, path)
+                // })
+
+                PhotoReportButton(
+                    onSceneAnalyzed = { description, imagePath, emergencyType ->
+                        onSceneAnalyzed(description, imagePath, emergencyType)
+                    },
+                    onImageReady = { outPath ->
+                        // ML Kit hard failure — send as plain image (old ImagePickerButton behavior)
+                        onSendImageNote(latestSelectedPeer.value, latestChannel.value, outPath)
+                    }
+                )
             }
 
             Spacer(Modifier.width(1.dp))
 
-            VoiceRecordButton(
-                backgroundColor = bg,
-                onStart = {
-                    isRecording = true
-                    elapsedMs = 0L
-                    // Keep existing focus to avoid IME collapse, but do not force-show keyboard
-                    if (isFocused.value) {
-                        try { focusRequester.requestFocus() } catch (_: Exception) {}
-                    }
-                },
-                onAmplitude = { amp, ms ->
-                    amplitude = amp
-                    elapsedMs = ms
-                },
-                onFinish = { path ->
-                    isRecording = false
-                    // Extract and cache waveform from the actual audio file to match receiver rendering
-                    AudioWaveformExtractor.extractAsync(path, sampleCount = 120) { arr ->
-                        if (arr != null) {
-                            try { com.bitchat.android.ai.voice.VoiceWaveformCache.put(path, arr) } catch (_: Exception) {}
-                        }
-                    }
-                    // BLE path (private or public) — use latest values to avoid stale captures
-                    latestOnSendVoiceNote.value(
-                        latestSelectedPeer.value,
-                        latestChannel.value,
-                        path
-                    )
-                }
-            )
+            // ── DISABLED: VoiceRecordButton (sends audio as attachment) ──────────────────
+            // Replaced by VoskTranscribeButton below which converts speech to text instead.
+            // Kept for reference — do not delete.
+            // VoiceRecordButton(
+            //     backgroundColor = bg,
+            //     onStart = {
+            //         isRecording = true; elapsedMs = 0L
+            //         if (isFocused.value) { try { focusRequester.requestFocus() } catch (_: Exception) {} }
+            //     },
+            //     onAmplitude = { amp, ms -> amplitude = amp; elapsedMs = ms },
+            //     onFinish = { path ->
+            //         isRecording = false
+            //         AudioWaveformExtractor.extractAsync(path, sampleCount = 120) { arr ->
+            //             if (arr != null) { try { com.bitchat.android.ai.voice.VoiceWaveformCache.put(path, arr) } catch (_: Exception) {} }
+            //         }
+            //         latestOnSendVoiceNote.value(latestSelectedPeer.value, latestChannel.value, path)
+            //     }
+            // )
 
-            // Vosk STT button: tap to speak → transcribed text is inserted into the input field
+            // ── VoskTranscribeButton — speech → text inserted into TextField ──────────────
             val latestOnValueChange = rememberUpdatedState(onValueChange)
             val latestValue = rememberUpdatedState(value)
             VoskTranscribeButton(
-                enabled = !isRecording,
+                enabled = true,
                 backgroundColor = bg,
                 onTranscribed = { text ->
                     val current = latestValue.value.text

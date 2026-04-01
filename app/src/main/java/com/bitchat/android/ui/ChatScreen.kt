@@ -243,7 +243,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
         onSendFileNote = { peer, onionOrChannel, path ->
             viewModel.sendFileNote(peer, onionOrChannel, path)
         },
-        
+        onSceneAnalyzed = { description, _, _ ->
+            // Populate TextField for user review. Image is never sent when ML Kit returns labels.
+            messageText = TextFieldValue(
+                text = description,
+                selection = androidx.compose.ui.text.TextRange(description.length)
+            )
+        },
         showCommandSuggestions = showCommandSuggestions,
         commandSuggestions = commandSuggestions,
         showMentionSuggestions = showMentionSuggestions,
@@ -455,6 +461,7 @@ fun ChatInputSection(
     onSendVoiceNote: (String?, String?, String) -> Unit,
     onSendImageNote: (String?, String?, String) -> Unit,
     onSendFileNote: (String?, String?, String) -> Unit,
+    onSceneAnalyzed: (description: String, imagePath: String, emergencyType: String) -> Unit,
     showCommandSuggestions: Boolean,
     commandSuggestions: List<CommandSuggestion>,
     showMentionSuggestions: Boolean,
@@ -498,6 +505,7 @@ fun ChatInputSection(
                 onSendVoiceNote = onSendVoiceNote,
                 onSendImageNote = onSendImageNote,
                 onSendFileNote = onSendFileNote,
+                onSceneAnalyzed = onSceneAnalyzed,
                 selectedPrivatePeer = selectedPrivatePeer,
                 currentChannel = currentChannel,
                 nickname = nickname,

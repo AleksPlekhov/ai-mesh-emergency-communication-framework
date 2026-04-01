@@ -40,6 +40,7 @@ In disaster zones, communication breakdown is one of the leading causes of preve
 | No situational overview | Manual data collection | Auto-generated FEMA reports |
 | Battery drain | Always-on radio | AI-driven adaptive energy management |
 | No coordinator tools | Raw message feeds | Structured incident summaries |
+| Image reporting over BLE | Full image transfer (~500 KB) saturates BLE bandwidth | On-device scene analysis converts photo to compact text report (~100 bytes) |
 
 ---
 
@@ -56,6 +57,10 @@ In disaster zones, communication breakdown is one of the leading causes of preve
 │  [M3] FEMA ICS-213      │  [M4] AI Energy           │
 │  Report Generator       │  Optimizer                │
 │  Situation awareness   │  BLE/WiFi adaptive mgmt   │
+├─────────────────────────────────────────────────────┤
+│  [M5] Photo Scene Analysis — ML Kit Image Labeling  │
+│  Photo → on-device classification → text report     │
+│  Eliminates image transfer over BLE (~500× smaller) │
 ├─────────────────────────────────────────────────────┤
 │           BitChat BLE Mesh Protocol Layer            │
 │     (Bluetooth LE · Noise Protocol · Multi-hop)     │
@@ -82,7 +87,9 @@ The project uses a multi-module Gradle build to cleanly separate AI concerns fro
     ├── ai/report/          — FEMA ICS-213 report data and HTML generator
     │     ├── ICS213ReportData           (structured data classes for the ICS-213 form)
     │     └── ICS213ReportGenerator      (pure HTML renderer, no Android deps, unit-testable)
-    └── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
+    ├── ai/voice/           — Offline STT (Vosk), voice recording, waveform tools
+    └── ai/vision/          — Photo scene analysis and label-to-category mapping
+          └── SceneToEmergencyMapper   (ML Kit label strings → 9 emergency categories + description text)
 ```
 
 The `:resqmesh-ai` module is an Android library with no dependency on `:app`, keeping AI code independently testable and reusable.
@@ -213,12 +220,49 @@ Intelligently manages radio relay decisions based on battery state to maximize m
 - `PacketRelayManager` delegates relay decisions entirely to `EnergyRelayPolicy`; energy mode is updated live via `BluetoothConnectionManager.onEnergyModeChanged` callback wired in `BluetoothMeshService`
 - Power mode change notifications shown as toasts
 
+**Research foundation — adaptive transport selection:**
+- The power optimization strategies documented in Pliekhov (2024) — including energy-aware relay probability, adaptive transmission rates, and duty cycling — form the conceptual foundation for ResQMesh AI's EnergyRelayPolicy, which implements these principles at the radio layer. The hybrid BLE/Wi-Fi Direct approach proposed in that work is planned for Phase 2, where transport selection will be governed by battery state and payload size thresholds.
+- The energy-bandwidth tradeoff governing BLE vs. Wi-Fi Direct selection in Phase 2 is grounded in empirical measurements from peer-reviewed research by the project author. Pliekhov & Babii (2025) demonstrated that Wi-Fi Direct outperforms BLE in throughput and range but incurs approximately 20% higher power consumption on Android devices (tested on Pixel 4 and Samsung Galaxy S10). ResQMesh AI's EnergyRelayPolicy will use these benchmarks as the basis for transport switching thresholds — defaulting to BLE under POWER_SAVER and ULTRA_LOW_POWER modes, and enabling Wi-Fi Direct only when battery state is PERFORMANCE or BALANCED and payload size exceeds the BLE MTU threshold.
+
 **Planned (Phase 2):**
 - Adaptive BLE scan interval based on network traffic patterns
-- Dynamic switching between BLE and Wi-Fi Direct based on bandwidth requirements
+- Dynamic switching between BLE and Wi-Fi Direct based on bandwidth requirements and battery state — building on empirical performance benchmarks established in Pliekhov & Babii (2025), which demonstrated Wi-Fi Direct's throughput advantage for large payloads at the cost of ~20% higher power consumption compared to BLE
 - Protocol-level battery metadata broadcasting so coordinators see node health across the mesh
 
 **Why it matters:** In prolonged disaster scenarios (multi-day events), battery life is a critical constraint. Extending network lifetime by even 20-30% can be the difference between maintaining communication during critical rescue windows.
+
+---
+
+### M5 — Photo Scene Analysis (Image-to-Text for BLE Efficiency)
+
+Converts a photo taken at an incident scene into a compact text emergency report using on-device image classification, eliminating the need to transmit raw image data over the BLE mesh.
+
+**The bandwidth problem:** A typical smartphone photo, even after compression to 512 px, is ~80–150 KB. BLE throughput in a mesh scenario peaks at roughly 20–50 KB/s per hop. A single image can occupy the radio for several seconds, blocking other messages and exhausting battery faster. In a multi-hop mesh under load, image transfer is effectively impractical.
+
+**The solution:** Classify the image locally, discard it, send only the resulting text description — typically 80–120 bytes. This is approximately **500–1000× smaller** than the raw image.
+
+**Implementation:**
+- `ImageSceneAnalyzer` (`:app`, `features/media/`) — suspending wrapper around **ML Kit Image Labeling** (bundled model, fully offline, no Play Services required); reuses `ImageUtils.loadBitmapWithExifOrientation` for EXIF-corrected input
+- `SceneToEmergencyMapper` (`:resqmesh-ai`, `ai/vision/`) — pure-Kotlin mapper: translates ML Kit label strings into one of the 9 app emergency categories and generates a pre-formatted message description; no Android or ML Kit dependencies — independently unit-testable
+- `PhotoReportButton` (`:app`, `ui/media/`) — orange `AddAPhoto` icon in the chat input row; visually distinct from the standard image send button; single-click opens gallery, long-click opens camera; shows a `CircularProgressIndicator` during analysis (~200–400 ms on modern hardware)
+
+**Three outcome paths:**
+| ML Kit result | Sent to mesh |
+|---|---|
+| Emergency category detected (FIRE, FLOOD, COLLAPSE…) | Text only: `[📷] 🔥 FIRE: Burning building, smoke. Requires immediate response.` |
+| Labels returned, no matching category | Text only: `[📷] Scene: Building, outdoor, road.` — user can edit before sending |
+| No labels / ML Kit failure | Image sent as attachment (original behavior, graceful fallback) |
+
+**The `[📷]` prefix** on all generated messages signals to recipients that the report was auto-generated from a photo rather than typed — important for coordinators assessing information reliability.
+
+**Text message flow:**
+1. User taps the orange camera button and takes a photo (or picks from gallery)
+2. ML Kit analyzes the image on-device (~200–400 ms)
+3. The generated description pre-fills the message TextField
+4. User reviews, optionally edits, and taps Send
+5. A standard text message (~100 bytes) travels the mesh — not an image
+
+**Why it matters:** BLE mesh bandwidth is a shared, scarce resource. Every kilobyte saved extends the effective range of the network and reduces latency for all other messages. In a dense disaster scenario where dozens of nodes are transmitting simultaneously, image-free photo reporting is not a convenience feature — it is a prerequisite for network viability.
 
 ---
 
@@ -237,6 +281,8 @@ Intelligently manages radio relay decisions based on battery state to maximize m
 - ✅ Emergency Location Attachment — optional GPS / manual address appended to CRITICAL and HIGH messages via `LocationAttachSheet`
 - ✅ M3: FEMA ICS-213 Report Generator — Compose-rendered report with share/print support; pure-Kotlin HTML generator in `:resqmesh-ai`
 - ✅ M4: AI Energy Optimizer (first iteration) — `EnergyRelayPolicy` adapts relay probability to battery state; CRITICAL packets always relay even at ULTRA_LOW_POWER
+- ✅ M5: Photo Scene Analysis — on-device ML Kit image labeling converts photos to compact text emergency reports; ~500–1000× bandwidth reduction vs. raw image transfer over BLE
+
 
 
 **Phase 2 (6–12 months):**
@@ -272,6 +318,7 @@ This platform addresses priorities identified by multiple U.S. federal initiativ
 | AI/ML Runtime | TensorFlow Lite 2.14 | `:resqmesh-ai` |
 | Speech Recognition | Vosk Android 0.3.47 (offline) | `:resqmesh-ai` |
 | Message Classifier | Composite pipeline: keyword rules + TFLite model | `:resqmesh-ai` |
+| Image Scene Analysis | ML Kit Image Labeling 17.0.9 (bundled, offline) | `:app` + `:resqmesh-ai` |
 | Mesh Transport | Bluetooth Low Energy (BLE) | `:app` |
 | Encryption | Noise Protocol Framework | `:app` |
 | Mesh Routing | Multi-hop flood routing with Bloom Filter deduplication | `:app` |
@@ -312,10 +359,24 @@ In accordance with GPL-3.0, this project is released under the same license and 
 ---
 
 ## Research & Publications
-
-- **[Published — March 25, 2026]** "[When the Internet Dies, Your Phone Can Still Be Smart: Building AI-Powered Disaster Communication](https://hackernoon.com/when-the-internet-dies-your-phone-can-still-be-smart-building-ai-powered-disaster-communication)" — HackerNoon
-- *[Preprint — coming soon]* "AI-Driven Message Prioritization for Offline BLE Mesh Networks in Disaster Response Scenarios" — arXiv
-
+ - **[Published — December 18, 2024]**
+ "Strategies for Minimizing Power Consumption and Optimizing Resources for Android-Based Mesh Networks" — *In Plain English*.
+ *Documents energy optimization strategies for Android mesh networks, including energy-aware relay routing and adaptive duty cycling — concepts subsequently implemented in ResQMesh AI's EnergyRelayPolicy. Hybrid BLE/Wi-Fi Direct transport selection proposed in this work is planned for Phase 2.* URL: https://plainenglish.io/technology/strategies-for-minimizing-power-consumption-and-optimizing-resources-for-android-based-mesh-networks
+ - **[Published — January 8, 2025]**
+  "Optimizing Android Mesh Networks for Mobility: Enhancing
+  Connectivity in Moving Peer-to-Peer Systems" — *Medium / Android Development*.
+  *Proposes adaptive peer discovery, cross-protocol BLE/Wi-Fi Direct integration, and energy-aware scanning — techniques grounded in CSRMesh production experience at EZLO Innovation and planned for ResQMesh AI Phase 2. Reports 35% energy reduction and 40% connection stability improvement.* URL: https://medium.com/android-networking/optimizing-android-mesh-networks-for-mobility-enhancing-connectivity-in-moving-peer-to-peer-14ec750ae33a
+ - **[Published — March 30, 2025]**
+  "Disaster-Proof Mobile Networks: How Android-Powered Mesh Tech Can Save Lives" — *Medium*.
+  *Establishes the disaster response use case and national importance framework for ResQMesh AI — citing FCC, FEMA, and IFRC data on communication infrastructure failure during major disasters. The AI-driven routing optimization proposed in this work is implemented in ResQMesh AI's composite classifier and BLE Priority Queue.* URL: https://medium.com/@aleks.plekhov/disaster-proof-mobile-networks-how-android-powered-mesh-tech-can-save-lives-75fac09224ba
+ - **[Published — October 2025]**
+  "Wi-Fi Direct in Android: Creating Seamless Device-to-Device Communication" — *Sustainable Engineering and Innovation*, Vol. 7, No. 2, pp. 477–492. Co-authored with Kateryna Babii. DOI: 10.37868/sei.v7i2.id539.
+  *Establishes empirical performance benchmarks for BLE vs. Wi-Fi Direct on Android — foundational research for ResQMesh AI Phase 2 adaptive transport layer.*
+ - **[Preprint — March 31, 2026]**
+  "AI-Driven Message Prioritization for Offline BLE Mesh
+  Networks in Disaster Response Scenarios" — SSRN,
+  DOI: 10.2139/ssrn.6428398.
+ - **[Published — March 25, 2026]** "[When the Internet Dies, Your Phone Can Still Be Smart: Building AI-Powered Disaster Communication](https://hackernoon.com/when-the-internet-dies-your-phone-can-still-be-smart-building-ai-powered-disaster-communication)" — HackerNoon
 ---
 
 ## Contributing
@@ -354,6 +415,7 @@ In accordance with GPL-3.0 requirements, this project is derived from [BitChat A
 - [permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android) — foundational BLE mesh protocol implementation
 - [Vosk Speech Recognition](https://alphacephei.com/vosk/) — offline STT engine
 - [TensorFlow Lite](https://www.tensorflow.org/lite) — on-device ML inference
+- [Google ML Kit Image Labeling](https://developers.google.com/ml-kit/vision/image-labeling) — bundled on-device image classification for photo scene analysis
 - FEMA Incident Command System — ICS-213 standard reference
 
 ---

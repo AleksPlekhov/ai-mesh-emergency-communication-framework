@@ -66,6 +66,6 @@ internal object ClassifierUtils {
         "FIRE", "FLOOD", "SECURITY"                      -> MessagePriority.HIGH
         "INFRASTRUCTURE", "WEATHER",
         "MISSING_PERSON", "RESOURCE_REQUEST"             -> MessagePriority.NORMAL
-        else                                             -> MessagePriority.NORMAL  // unknown → standard message, not LOW
+        else                                             -> MessagePriority.NONE
     }
 }

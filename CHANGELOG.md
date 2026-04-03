@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # Changelog — ResQMesh
 
+## [0.0.2] - 2026-04-03
+
+### Changed
+- Retrained TFLite emergency classifier model (`emergency_model.tflite`) with updated vocabulary and softmax output layer — model now outputs probabilities directly, removing the need for manual softmax post-processing
+- Added 10th output class `NONE` to `label_map.json` and `MessagePriority` enum (renamed from `LOW`) for non-emergency messages
+- `ClassifierUtils.mapToPriority()` now maps unknown/unrecognised categories to `NONE` instead of `NORMAL`
+- `TFLiteMessageClassifier` no longer applies `softmax()` to model output (model includes softmax in its final layer)
+
+### Added
+- 90 vocabulary coverage tests in `TFLiteMessageClassifierTest` — 10 example messages per emergency category, verifying the tokenizer recognises enough domain-specific words
+
+### Fixed
+- Removed leftover debug log in `TFLiteMessageClassifier.loadWordIndex()`
+
 ## [0.0.1] - 2026-03-09
 
 ### Added
@@ -38,7 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `BluetoothConnectionManager.onEnergyModeChanged` — nullable callback invoked on every `PowerManager` mode change; maps `PowerMode → EnergyMode` via private extension without coupling `:resqmesh-ai` to Android types
   - `BluetoothMeshService.setupDelegates()` — wires the callback: `connectionManager.onEnergyModeChanged = { mode -> packetProcessor.energyMode = mode }`
   - `EnergyRelayPolicyTest` — 21 JUnit tests covering all boundary values, all enum combinations, passive-mode invariant (ULTRA_LOW_POWER → 0.0 normal / 0.2 critical), and monotonicity of both axes
-  - `BluetoothConnectionManager.onPowerModeChanged()` now shows a short `Toast` on the main thread whenever the power mode changes automatically; message is fully localised — 4 string resources (`power_mode_performance`, `power_mode_balanced`, `power_mode_power_saver`, `power_mode_ultra_low_power`) added to all 35 `strings.xml` files (en, uk, ru, de, fr, es, it, pt, pt-rBR, pl, nl, sv, tr, ar, fa, he, ur, pa-rPK, hi, bn, ne, ta, ja, ko, zh, zh-rCN, zh-rTW, th, vi, id, ms, fil, ka, mg); uses `Handler(Looper.getMainLooper())` to marshal from the IO coroutine scope
+  - `BluetoothConnectionManager.onPowerModeChanged()` now shows a short `Toast` on the main thread whenever the power mode changes automatically; message uses 4 string resources (`power_mode_performance`, `power_mode_balanced`, `power_mode_power_saver`, `power_mode_ultra_low_power`); uses `Handler(Looper.getMainLooper())` to marshal from the IO coroutine scope
 
 ### Fixed
 - `ICS213ReportScreen`: WebView dependency removed from the report preview entirely; the form is now rendered as a pure Compose `LazyColumn` directly from `ICS213ReportData` (white background, monospace font, priority badges, signature blocks); this eliminates the Android 11 Trichrome crash where `Package not found: com.google.android.webview` prevented the report from showing at all

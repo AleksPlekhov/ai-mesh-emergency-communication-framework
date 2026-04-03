@@ -70,7 +70,7 @@ The project uses a multi-module Gradle build to cleanly separate AI concerns fro
 :app                        — Android application (UI, mesh, crypto, routing)
 :resqmesh-ai            — All AI/ML functionality (self-contained library)
     ├── ai/classifier/      — Message priority classification
-    │     ├── KeywordMessageClassifier   (~90 FEMA/ICS keywords across 9 categories, always available)
+    │     ├── KeywordMessageClassifier   (~90 FEMA/ICS keywords across 9 categories + NONE, always available)
     │     ├── TFLiteMessageClassifier    (neural model, activated by dropping .tflite asset)
     │     ├── CompositeMessageClassifier (keyword-first → TFLite fallback pipeline)
     │     └── MessageClassifierFactory   (selects best available backend at runtime)
@@ -95,13 +95,15 @@ The `:resqmesh-ai` module is an Android library with no dependency on `:app`, ke
 
 Classifies incoming mesh messages into priority tiers and emergency categories using a two-stage on-device pipeline. In a disaster zone, not all messages are equal — a medical emergency must reach rescue coordinators before routine check-in messages.
 
+> **Language support:** The classifier currently supports **English only**. Both the keyword rules and the TFLite model vocabulary are English-based. Multi-language classification is planned for a future release.
+
 **Priority levels:**
 - `CRITICAL` — Medical emergencies, SOS signals, structural collapse reports
 - `HIGH` — Fire, flood, active security threats
 - `NORMAL` — Infrastructure issues, weather hazards, missing persons, resource requests
-- `LOW` — Routine check-ins, test messages, false alarms
+- `NONE` — Routine check-ins, test messages, non-emergency content
 
-**9 recognised emergency categories:**
+**9 recognised emergency categories + NONE:**
 
 | Category | Examples |
 |---|---|
@@ -159,7 +161,7 @@ Ensures that life-critical messages are transmitted before routine traffic even 
 **Implementation:**
 - `BluetoothPacketBroadcaster` replaced with a `java.util.PriorityQueue` + `Mutex` + `CONFLATED` signal actor
 - Every outgoing packet carries a `priority: Int` field on `RoutedPacket` (default 2 = NORMAL); set synchronously by `KeywordMessageClassifier` inside `sendMessage()` before the packet is enqueued
-- CRITICAL packets are dequeued ahead of all NORMAL and LOW packets, regardless of arrival order
+- CRITICAL packets are dequeued ahead of all NORMAL and NONE packets, regardless of arrival order
 - **Benchmark result:** 1001× faster delivery for CRITICAL messages vs FIFO with 1,000 queued packets at 100 µs/packet (`PriorityQueueBenchmarkTest`)
 
 **Why it matters:** A CRITICAL SOS message queued behind a routine status update could arrive minutes later in a high-traffic mesh. Radio-level preemption closes that gap to near-zero.
@@ -209,7 +211,7 @@ Intelligently manages radio relay decisions based on battery state to maximize m
 - `EnergyRelayPolicy` — pure Kotlin policy engine: relay probability = `networkFactor(networkSize)` × `energyMultiplier(EnergyMode)`; computed independently for each queued packet
 - CRITICAL/SOS packets always relay regardless of battery mode — minimum 0.20 relay probability at ULTRA_LOW_POWER, ensuring last-resort forwarding survives even nearly-dead devices
 - `PacketRelayManager` delegates relay decisions entirely to `EnergyRelayPolicy`; energy mode is updated live via `BluetoothConnectionManager.onEnergyModeChanged` callback wired in `BluetoothMeshService`
-- Power mode change notifications shown as toasts; fully localised across all 35 supported languages
+- Power mode change notifications shown as toasts
 
 **Planned (Phase 2):**
 - Adaptive BLE scan interval based on network traffic patterns
@@ -225,13 +227,13 @@ Intelligently manages radio relay decisions based on battery state to maximize m
 **Phase 1 — Core AI Platform (current, 0–3 months):**
 - ✅ Project forked from BitChat Android (GPL-3.0)
 - ✅ `:resqmesh-ai` Gradle module — dedicated AI library module, independent of `:app`
-- ✅ M1: Keyword classifier — ~90 FEMA/ICS keyword rules across 9 emergency categories
+- ✅ M1: Keyword classifier — ~90 FEMA/ICS keyword rules across 9 emergency categories + NONE
 - ✅ M1: TFLite classifier — `emergency_model.tflite` included in assets; CompositeClassifier active out of the box
 - ✅ M1: `CompositeMessageClassifier` — keyword-first, TFLite fallback two-stage pipeline
 - ✅ M1: Real-time visual indicators — category-coloured left stripes and emoji badges on every classified message; theme-aware (Material3 light/dark)
 - ✅ M1: Emergency Feed — always-visible feed button opens a priority-sorted category sheet; category detail view shows filtered messages with system back navigation
 - ✅ M2: Offline Speech Recognition — voice-to-text input via Vosk Android (no internet required)
-- ✅ BLE Priority Queue — CRITICAL packets preempt NORMAL/LOW at the radio layer; 1001× faster delivery proven by benchmark
+- ✅ BLE Priority Queue — CRITICAL packets preempt NORMAL/NONE at the radio layer; 1001× faster delivery proven by benchmark
 - ✅ Emergency Location Attachment — optional GPS / manual address appended to CRITICAL and HIGH messages via `LocationAttachSheet`
 - ✅ M3: FEMA ICS-213 Report Generator — Compose-rendered report with share/print support; pure-Kotlin HTML generator in `:resqmesh-ai`
 - ✅ M4: AI Energy Optimizer (first iteration) — `EnergyRelayPolicy` adapts relay probability to battery state; CRITICAL packets always relay even at ULTRA_LOW_POWER

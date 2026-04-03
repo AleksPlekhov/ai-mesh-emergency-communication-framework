@@ -228,6 +228,9 @@ All mesh components use `android.util.Log` with consistent tags:
 Examples already in `:resqmesh-ai`: `ICS213ReportData`, `ICS213ReportGenerator`, `shouldShowEmergencyBadge`, `categoryEmojiAndLabel`.
 
 ### Classifier System
+
+> **English only** — both the keyword rules and TFLite model vocabulary are English-based. Multi-language classification is a future goal.
+
 ```
 MessageClassifierFactory    — Selects TFLite or keyword backend
 TFLiteMessageClassifier       — Neural classification (requires .tflite asset)

@@ -48,7 +48,7 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
         val lowHit = LOW_KEYWORDS.firstOrNull { text.contains(it) }
         if (lowHit != null) {
             return ClassificationResult(
-                priority   = MessagePriority.LOW,
+                priority   = MessagePriority.NONE,
                 confidence = 0.75f,
                 reasoning  = "Keyword match: \"$lowHit\""
             )
@@ -144,6 +144,16 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
             "TRAUMA"                  to "MEDICAL",
             "HURT"                    to "MEDICAL",
             "PAIN"                    to "MEDICAL",
+            "URGENT"                  to "MEDICAL",
+            "EMERGENCY"               to "MEDICAL",
+            "CAN'T BREATHE"     to "MEDICAL",
+            "CANT BREATHE"      to "MEDICAL",
+            "CANNOT BREATHE"    to "MEDICAL",
+            "HARD TO BREATHE"   to "MEDICAL",
+            "DIFFICULTY BREATHING" to "MEDICAL",
+            "TROUBLE BREATHING" to "MEDICAL",
+            "CHOKING"           to "MEDICAL",
+            "SUFFOCATING"       to "MEDICAL",
             // Fire
             "FIRE"                    to "FIRE",
             "WILDFIRE"                to "FIRE",
@@ -265,9 +275,6 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
             "SUPPLY SHORTAGE"         to "RESOURCE_REQUEST",
             "FOOD SHORTAGE"           to "RESOURCE_REQUEST",
             "WATER SHORTAGE"          to "RESOURCE_REQUEST",
-            // Generic urgent markers
-            "URGENT"                  to "MEDICAL",
-            "EMERGENCY"               to "MEDICAL"
         )
 
         // ── LOW: clearly non-urgent ────────────────────────────────────────

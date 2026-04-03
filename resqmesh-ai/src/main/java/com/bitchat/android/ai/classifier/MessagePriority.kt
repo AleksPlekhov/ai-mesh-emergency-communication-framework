@@ -8,7 +8,7 @@ enum class MessagePriority {
     /** Standard mesh communication. */
     NORMAL,
     /** Non-urgent informational content. */
-    LOW
+    NONE
 }
 
 data class ClassificationResult(

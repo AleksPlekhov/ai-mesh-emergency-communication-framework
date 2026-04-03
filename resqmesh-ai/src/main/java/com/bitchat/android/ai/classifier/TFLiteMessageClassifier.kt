@@ -54,7 +54,7 @@ class TFLiteMessageClassifier(context: Context) : MessagePriorityClassifier {
         val output = Array(1) { FloatArray(labels.size) }
         interpreter.run(input, output)
 
-        val probs      = ClassifierUtils.softmax(output[0])
+        val probs = output[0]
         val maxIdx     = probs.indices.maxByOrNull { probs[it] } ?: 0
         val confidence = probs[maxIdx]
         val category   = labels[maxIdx] ?: "UNKNOWN"
@@ -76,7 +76,8 @@ class TFLiteMessageClassifier(context: Context) : MessagePriorityClassifier {
     private fun loadWordIndex(context: Context): Map<String, Int> {
         val json   = context.assets.open(TOKENIZER_ASSET).bufferedReader().readText()
         val config = JSONObject(json).getJSONObject("config")
-        val raw    = JSONObject(config.getString("word_index"))
+        val wordIndexStr = config.getString("word_index")
+        val raw          = JSONObject(wordIndexStr)
         return buildMap { raw.keys().forEach { word -> put(word, raw.getInt(word)) } }
     }
 

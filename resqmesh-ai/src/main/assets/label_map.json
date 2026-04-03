@@ -7,5 +7,6 @@
   "5": "SECURITY",
   "6": "WEATHER",
   "7": "MISSING_PERSON",
-  "8": "RESOURCE_REQUEST"
+  "8": "RESOURCE_REQUEST",
+  "9": "NONE"
 }

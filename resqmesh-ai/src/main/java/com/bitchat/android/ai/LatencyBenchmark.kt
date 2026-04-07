@@ -65,7 +65,7 @@ private fun loadModelFile(context: Context): ByteBuffer {
 
 // ── Main benchmark function — call from onCreate() ───────────────────────────
 fun runLatencyBenchmark(context: Context) {
-    Log.i(TAG, "=== ResQMesh TFLite Latency Benchmark ===")
+    Log.i(TAG, "=== ResQMesh AI TFLite Latency Benchmark ===")
 
     val modelBuffer = loadModelFile(context)
     val interpreter = Interpreter(modelBuffer)

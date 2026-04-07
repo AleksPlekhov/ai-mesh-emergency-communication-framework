@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ResQMesh</string>
+    <string name="app_name">ResQMesh AI</string>
     <string name="permission_bluetooth_rationale">İnternetsiz eşler arası mesajlaşma için Bluetooth izni gerekir.</string>
     <string name="permission_location_rationale">Bluetooth ile yakın cihazları bulmak için konum izni gerekir.</string>
     <string name="permission_notification_rationale">Yeni mesajlarda bildirim gönderebilmek için izin gerekir.</string>
@@ -264,7 +264,7 @@
     <string name="grant_permissions">İzin ver</string>
     <string name="location_tracking_warning">bitchat konumunu takip etmez</string>
     <string name="at_symbol">@</string>
-    <string name="app_brand">ResQMesh/</string>
+    <string name="app_brand">ResQMesh AI/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="geohash_people_header">KİŞİLER</string>
     <string name="nobody_around">yakında kimse yok…</string>

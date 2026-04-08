@@ -31,6 +31,9 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    androidResources {
+        noCompress += "tflite"
+    }
     buildFeatures {
         compose = true
     }
@@ -54,7 +57,7 @@ dependencies {
     // Vosk offline speech recognition (moved from :app)
     implementation(libs.vosk.android)
 
-    // TensorFlow Lite (message priority classifier)
+    // TensorFlow Lite (message priority classifier + vision classifier)
     implementation(libs.tflite)
 
     // Testing

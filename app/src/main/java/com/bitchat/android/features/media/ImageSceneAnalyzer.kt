@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.bitchat.android.ai.vision.SceneAnalysisResult
 import com.bitchat.android.ai.vision.SceneToEmergencyMapper
+import com.bitchat.android.ai.vision.VisionTFLiteClassifier
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
@@ -14,24 +15,22 @@ import kotlin.coroutines.suspendCoroutine
 private const val TAG = "ImageSceneAnalyzer"
 
 /**
- * Analyzes a photo file with ML Kit Image Labeling (bundled, fully offline) and
- * maps the resulting labels to an emergency category via [SceneToEmergencyMapper].
+ * Analyzes a photo file and maps the resulting labels to an emergency category.
  *
- * Uses the existing [ImageUtils.loadBitmapWithExifOrientation] so EXIF rotation
- * is already corrected before the image reaches the model.
+ * Strategy:
+ *  1. **TFLite** — custom emergency vision model ([VisionTFLiteClassifier]).
+ *     If the model asset is present and returns a confident emergency prediction
+ *     (confidence >= 0.55, non-"normal"), that result is used immediately.
+ *  2. **ML Kit** (fallback) — bundled Image Labeling, fully offline.
+ *     Used when TFLite is unavailable, returns "normal", or is below threshold.
  *
- * Return contract (see [SceneAnalysisResult]):
- *  • description.isNotEmpty() + emergencyType.isNotEmpty()  → recognized category (FIRE, FLOOD…)
- *  • description.isNotEmpty() + emergencyType.isEmpty()     → labels found, no known category
- *  • description.isEmpty()                                  → ML Kit hard failure / no labels
- *
- * The caller ([PhotoReportButton]) uses these three states to decide whether to
- * populate the TextField or fall back to plain image send.
+ * Uses [ImageUtils.loadBitmapWithExifOrientation] so EXIF rotation is already
+ * corrected before the image reaches either model.
  */
 object ImageSceneAnalyzer {
 
     /**
-     * @param context  Android context (required by [InputImage]).
+     * @param context  Android context (required by models and [InputImage]).
      * @param imagePath Absolute path to a JPEG/PNG already downscaled by [ImageUtils].
      * @return [SceneAnalysisResult] — never throws; returns empty result on failure.
      */
@@ -42,11 +41,27 @@ object ImageSceneAnalyzer {
                     Log.w(TAG, "Could not decode bitmap from $imagePath")
                 }
 
+            // ── Try TFLite custom model first ──────────────────────────────
+            if (VisionTFLiteClassifier.isAvailable(context)) {
+                try {
+                    val classifier = VisionTFLiteClassifier(context)
+                    val tfliteResult = classifier.classify(bitmap)
+                    classifier.close()
+
+                    if (tfliteResult.emergencyType.isNotEmpty() && tfliteResult.confidence >= 0.55f) {
+                        Log.d(TAG, "TFLite result accepted: ${tfliteResult.emergencyType} (${tfliteResult.confidence})")
+                        bitmap.recycle()
+                        return tfliteResult
+                    }
+                    Log.d(TAG, "TFLite result not confident enough, falling back to ML Kit")
+                } catch (e: Exception) {
+                    Log.w(TAG, "TFLite inference failed, falling back to ML Kit", e)
+                }
+            }
+
+            // ── Fall back to ML Kit Image Labeling ─────────────────────────
             val inputImage = InputImage.fromBitmap(bitmap, 0)
 
-            // Bundled labeler: model ships with the APK, no network required.
-            // Confidence threshold 0.5 keeps only meaningful detections and
-            // reduces noise from distant/ambiguous background objects.
             val labeler = ImageLabeling.getClient(
                 ImageLabelerOptions.Builder()
                     .setConfidenceThreshold(0.5f)
@@ -69,7 +84,7 @@ object ImageSceneAnalyzer {
             labeler.close()
             bitmap.recycle()
 
-            Log.d(TAG, "Labels: ${rawLabels.take(5).joinToString { "${it.first}(${it.second})" }}")
+            Log.d(TAG, "ML Kit labels: ${rawLabels.joinToString { "${it.first}(${it.second})" }}")
             SceneToEmergencyMapper.mapLabels(rawLabels)
 
         } catch (e: Exception) {

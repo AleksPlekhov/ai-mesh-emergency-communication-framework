@@ -64,7 +64,7 @@ object SceneToEmergencyMapper {
         val topLabels = labels.take(4)
             .joinToString(", ") { it.first.lowercase() }
             .replaceFirstChar { it.uppercase() }
-        return SceneAnalysisResult("[📷] Scene: $topLabels.", "", labels.first().second)
+        return SceneAnalysisResult("[📷]: $topLabels.", "", labels.first().second)
     }
 
     // ── Label keyword → emergency category ────────────────────────────────────

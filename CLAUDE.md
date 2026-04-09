@@ -1,8 +1,8 @@
 # Claude Code Instructions — ResQMesh AI / BitChat Android
 
-> **Effective: March 2026**  
+> **Effective: April 2026**  
 > **Project:** Decentralized BLE mesh messenger with on-device AI for disaster response.  
-> **Repository:** `/Users/oleksandr/Documents/_Projects/_DMAF`
+> **Repository:** `/Users/oleksandr/Documents/_Projects/_ReqQMesh`
 
 ---
 
@@ -34,7 +34,8 @@ docs/                   — Architecture specs (file_transfer.md, SOURCE_ROUTING
 | Async | Coroutines + Flow |
 | BLE | Nordic Semiconductor BLE library (2.6.1) |
 | Crypto | BouncyCastle, Tink, Noise Protocol Framework |
-| AI/ML | TensorFlow Lite (2.14.0), Vosk (0.3.47) |
+| AI/ML | TensorFlow Lite (2.14.0), Vosk (0.3.47), Google ML Kit Image Labeling |
+| Vision | MobileNetV2 (custom TFLite, 224x224 input, 5-class emergency scene detection) |
 | Networking | OkHttp (WebSocket for Nostr), Tor/Arti (planned) |
 | Location | Google Play Services Location |
 
@@ -47,7 +48,7 @@ docs/                   — Architecture specs (file_transfer.md, SOURCE_ROUTING
 | Package | Responsibility |
 |---------|----------------|
 | `ui/` | Compose screens, ViewModels, theme |
-| `ui/media/` | Image viewer, audio player, file picker |
+| `ui/media/` | Image viewer, audio player, file picker, photo report button |
 | `ui/debug/` | Mesh graph visualization, debug settings |
 | `mesh/` | **BLE core**: scanning, advertising, GATT, packet relay, security |
 | `protocol/` | Binary wire protocol, compression, padding |
@@ -62,15 +63,19 @@ docs/                   — Architecture specs (file_transfer.md, SOURCE_ROUTING
 | `sync/` | Gossip sync, bloom filters, packet deduplication |
 | `onboarding/` | Permission flows, battery optimization, BT setup |
 | `features/file/` | File transfer logic |
-| `features/media/` | Media handling |
+| `features/media/` | Media handling, `ImageSceneAnalyzer`, `ImageUtils` (vision pipeline orchestration) |
 | `util/` | Extensions, constants, binary encoding |
 
 ### AI Module (`resqmesh-ai/src/main/java/com/bitchat/android/ai/`)
 
 | Package | Responsibility |
 |---------|----------------|
-| `classifier/` | Message priority classification (TFLite + keyword fallback) |
+| `classifier/` | Message priority classification (CompositeMessageClassifier: keyword + TFLite pipeline) |
+| `vision/` | `VisionTFLiteClassifier` (MobileNetV2), `SceneToEmergencyMapper` (ML Kit label mapping) |
 | `voice/` | Vosk STT, voice recording, waveform visualization |
+| `energy/` | `EnergyRelayPolicy` — relay energy management |
+| `emergency/` | `EmergencyClassification` — badge logic, category emoji/label helpers |
+| `report/` | ICS-213 FEMA report data classes and HTML generator |
 
 ---
 
@@ -87,6 +92,7 @@ The app requires dangerous runtime permissions:
 - `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`
 - `RECORD_AUDIO` (voice input)
 - `POST_NOTIFICATIONS` (Android 13+)
+- `CAMERA` (photo report capture)
 - `READ_MEDIA_*` / `READ_EXTERNAL_STORAGE` (file sharing)
 
 **Always** verify permission patterns in `MainActivity.kt` or `onboarding/` before adding new hardware features.
@@ -142,10 +148,38 @@ nostr/NostrTransport.kt     — Bridge between mesh and Nostr
 nostr/NostrCrypto.kt        — Event signing/verification
 ```
 
+### Image-to-Category Pipeline
+```
+features/media/ImageSceneAnalyzer.kt       — Orchestrator: TFLite vision → ML Kit fallback
+features/media/ImageUtils.kt               — Downscale (512px), EXIF rotation, JPEG save
+ui/media/PhotoReportButton.kt              — Orange button: tap=gallery, long-press=camera
+ai/vision/VisionTFLiteClassifier.kt        — MobileNetV2 scene classifier (5 classes)
+ai/vision/SceneToEmergencyMapper.kt        — Maps ML Kit labels → 9 emergency categories
+```
+
+### Text Classification Pipeline
+```
+ai/classifier/CompositeMessageClassifier.kt — Two-stage: keyword → TFLite neural
+ai/classifier/KeywordMessageClassifier.kt   — 200+ emergency phrases, rule-based
+ai/classifier/TFLiteMessageClassifier.kt    — Keras text model (10-class)
+ai/classifier/MessageClassifierFactory.kt   — Runtime factory, selects best backend
+ai/classifier/ClassifierUtils.kt            — Priority mapping helpers
+```
+
+### Model Assets (resqmesh-ai/src/main/assets/)
+```
+emergency_vision_model.tflite  — MobileNetV2 vision (2.68 MB, 224x224 → 5 classes)
+vision_label_map.json          — Vision labels: fire, flood, normal, security, weather
+emergency_model.tflite         — Keras text classifier (tokenized text → 10 classes)
+label_map.json                 — Text labels: FIRE, FLOOD, MEDICAL, COLLAPSE, etc.
+tokenizer.json                 — Keras word-level tokenizer (word_index mapping)
+```
+
 ### UI
 ```
 ui/ChatScreen.kt        — Main chat UI (refactored, component-based)
 ui/ChatViewModel.kt     — Primary ViewModel for chat state
+ui/LocationAttachSheet.kt — Emergency location dialog (onSend/onSkip/onDismiss)
 ui/CategoryMessagesScreen.kt — Category-filtered message view
 ui/theme/Theme.kt       — Material 3 color scheme
 ```
@@ -227,15 +261,35 @@ All mesh components use `android.util.Log` with consistent tags:
 
 Examples already in `:resqmesh-ai`: `ICS213ReportData`, `ICS213ReportGenerator`, `shouldShowEmergencyBadge`, `categoryEmojiAndLabel`.
 
-### Classifier System
+### Image-to-Category Pipeline (IMPORTANT)
+
+The app converts photos into emergency categories entirely on-device:
+
+```
+Photo → Downscale (512px) → MobileNetV2 Vision (224x224) → Text Description → Text Classifier → Category + Priority
+```
+
+**Stage 1 — Vision (image → text):**
+- `VisionTFLiteClassifier`: custom MobileNetV2 (5 classes: fire, flood, normal, security, weather)
+  - Input: 224x224 bitmap, pixels normalized to [-1, 1]
+  - Confidence threshold: 0.55 — below this falls back to ML Kit
+- `SceneToEmergencyMapper`: maps Google ML Kit Image Labeling output (117 keyword rules) → 9 categories
+- `ImageSceneAnalyzer`: orchestrator in `:app` — tries TFLite first, ML Kit fallback
+
+**Stage 2 — Text classification (text → category + priority):**
+- `CompositeMessageClassifier`: two-stage pipeline
+  - First: `KeywordMessageClassifier` — 200+ emergency phrases, returns immediately on CRITICAL/HIGH
+  - Then: `TFLiteMessageClassifier` — Keras neural model, 10-class softmax, with confidence gate
+
+**Priority mapping:**
+| Priority | Categories |
+|----------|-----------|
+| CRITICAL | MEDICAL, COLLAPSE |
+| HIGH | FIRE, FLOOD, SECURITY |
+| NORMAL | INFRASTRUCTURE, WEATHER, MISSING_PERSON, RESOURCE_REQUEST |
+| NONE | Unclassified |
 
 > **English only** — both the keyword rules and TFLite model vocabulary are English-based. Multi-language classification is a future goal.
-
-```
-MessageClassifierFactory    — Selects TFLite or keyword backend
-TFLiteMessageClassifier       — Neural classification (requires .tflite asset)
-KeywordMessageClassifier      — Rule-based fallback (always works)
-```
 
 ### Emergency Classification
 ```
@@ -243,6 +297,13 @@ ai/emergency/EmergencyClassification.kt  — shouldShowEmergencyBadge(), categor
 ai/report/ICS213ReportData.kt            — Data classes for FEMA ICS-213 report
 ai/report/ICS213ReportGenerator.kt       — Pure HTML generator (no Android deps)
 ```
+
+### Location Attach Dialog
+
+When a message is classified as CRITICAL or HIGH, `LocationAttachSheet` appears:
+- **Send** — sends message with GPS/manual location appended (`📍 lat,lon`)
+- **Skip** — closes dialog, message is **not** sent
+- **Swipe-dismiss** — closes dialog, message is **not** sent
 
 ### Voice Input
 ```
@@ -333,4 +394,4 @@ See `docs/SOURCE_ROUTING.md` for multi-hop routing spec.
 
 ---
 
-*Last updated: March 2026 — added Git workflow rules (branch naming + no auto-commits)*
+*Last updated: April 2026 — added image-to-category pipeline (MobileNetV2 + ML Kit + CompositeClassifier), vision module docs, model assets, LocationAttachSheet behavior, updated repo path*

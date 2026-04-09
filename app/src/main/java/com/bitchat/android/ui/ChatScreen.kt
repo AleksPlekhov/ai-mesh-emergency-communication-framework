@@ -393,11 +393,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 pendingMessageText = null
                 forceScrollToBottom = !forceScrollToBottom
             },
-            onDismiss = {
-                // Swipe-dismiss = send without location so the message is never lost
-                viewModel.sendMessage(text)
+            onSkip = {
+                // Skip = discard the message, do not send
                 pendingMessageText = null
-                forceScrollToBottom = !forceScrollToBottom
+            },
+            onDismiss = {
+                // Swipe-dismiss = discard the message, do not send
+                pendingMessageText = null
             }
         )
     }

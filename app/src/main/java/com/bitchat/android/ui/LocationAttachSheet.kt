@@ -28,6 +28,7 @@ import com.google.android.gms.location.LocationServices
  *
  * @param onSend Called with the location string to append (null = no location).
  *               The caller is responsible for sending the final message.
+ * @param onSkip Called when the user taps "Skip" — the message should NOT be sent.
  * @param onDismiss Called when the sheet is dismissed without a choice being made.
  *                  Treat as "send without location".
  */
@@ -35,6 +36,7 @@ import com.google.android.gms.location.LocationServices
 @Composable
 fun LocationAttachSheet(
     onSend: (location: String?) -> Unit,
+    onSkip: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -146,9 +148,9 @@ fun LocationAttachSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Refuse — send without location
+                // Refuse — discard message, do not send
                 OutlinedButton(
-                    onClick = { onSend(null) },
+                    onClick = { onSkip() },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(4.dp)
                 ) {

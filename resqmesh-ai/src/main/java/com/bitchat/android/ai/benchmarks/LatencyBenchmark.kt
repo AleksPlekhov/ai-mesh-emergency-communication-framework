@@ -1,4 +1,4 @@
-package com.bitchat.android.ai
+package com.bitchat.android.ai.benchmarks
 
 /**
  * ResQMesh AI — TFLite Latency Benchmark
@@ -14,6 +14,7 @@ package com.bitchat.android.ai
  */
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
@@ -132,8 +133,8 @@ fun runLatencyBenchmark(context: Context) {
     Log.i(TAG, "Max:    ${"%.2f".format(max)} ms")
     Log.i(TAG, "")
     Log.i(TAG, "=== FOR PAPER ===")
-    Log.i(TAG, "Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
-    Log.i(TAG, "Android: ${android.os.Build.VERSION.RELEASE}")
+    Log.i(TAG, "Device: ${Build.MANUFACTURER} ${Build.MODEL}")
+    Log.i(TAG, "Android: ${Build.VERSION.RELEASE}")
     Log.i(TAG, "Mean latency: ${"%.1f".format(mean)} ms")
     Log.i(TAG, "P95  latency: ${"%.1f".format(p95)} ms")
     Log.i(TAG, "=================")

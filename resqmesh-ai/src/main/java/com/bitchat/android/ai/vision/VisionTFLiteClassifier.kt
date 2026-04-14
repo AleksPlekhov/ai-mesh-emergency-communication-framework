@@ -154,7 +154,7 @@ class VisionTFLiteClassifier(context: Context) : Closeable {
         const val MODEL_ASSET = "emergency_vision_model.tflite"
         const val LABELS_ASSET = "vision_label_map.json"
         const val IMG_SIZE = 224
-        private const val CONFIDENCE_THRESHOLD = 0.55f
+        private const val CONFIDENCE_THRESHOLD = 0.65f
 
         /**
          * Returns `true` if the TFLite model asset exists and can be opened.

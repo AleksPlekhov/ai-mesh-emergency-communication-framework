@@ -65,4 +65,8 @@ dependencies {
     // org.json is stubbed in Android unit tests; provide the real implementation
     // so @BeforeClass can parse tokenizer.json and label_map.json on the JVM.
     testImplementation("org.json:json:20231013")
+
+    // Instrumented tests (androidTest/)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }

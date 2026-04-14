@@ -83,7 +83,7 @@ class MainActivity : OrientationAwareActivity() {
         super.onCreate(savedInstanceState)
         // Run only for debug use case
         //runLatencyBenchmark(this)
-        MainScope().launch { runM5Benchmark(this@MainActivity) }
+        //MainScope().launch { runM5Benchmark(this@MainActivity) }
 
 
         // Register receiver for force finish signal from shutdown coordinator

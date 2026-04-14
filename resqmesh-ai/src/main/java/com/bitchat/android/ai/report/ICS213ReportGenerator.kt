@@ -74,17 +74,13 @@ object ICS213ReportGenerator {
     align-items: center;
     gap: 8px;
   }
-  .priority-badge {
+  .priority-label {
     font-size: 10px;
-    padding: 2px 7px;
+    padding: 0 4px;
     font-weight: bold;
     letter-spacing: 0.5px;
-    border-radius: 2px;
     vertical-align: middle;
   }
-  .priority-critical { background: #c00; color: #fff; }
-  .priority-high     { background: #e65100; color: #fff; }
-  .priority-routine  { background: #777; color: #fff; }
   .message-row {
     margin: 3px 0 3px 20px;
     font-size: 12px;
@@ -211,12 +207,7 @@ object ICS213ReportGenerator {
         } else {
             data.categories.forEach { cat ->
                 val count = cat.messages.size
-                val badgeClass = when (cat.priority) {
-                    "CRITICAL" -> "priority-critical"
-                    "HIGH"     -> "priority-high"
-                    else       -> "priority-routine"
-                }
-                appendLine("""  <div class="category-header">${cat.emoji.htmlEscape()} ${cat.name.htmlEscape()} &nbsp;<span class="priority-badge $badgeClass">${cat.priority.htmlEscape()}</span> &nbsp;<span style="font-weight:normal;font-size:12px">(${count} report${if (count != 1) "s" else ""})</span></div>""")
+                appendLine("""  <div class="category-header">${cat.name.htmlEscape()} &nbsp;<span class="priority-label">[${cat.priority.htmlEscape()}]</span> &nbsp;<span style="font-weight:normal;font-size:12px">(${count} report${if (count != 1) "s" else ""})</span></div>""")
                 cat.messages.forEach { msg ->
                     appendLine("""  <div class="message-row">&#8226; <b>${msg.sender.htmlEscape()}</b> [${msg.timestamp.htmlEscape()}] &mdash; &ldquo;${msg.text.htmlEscape()}&rdquo;<span class="confidence"> &nbsp;·&nbsp; ${msg.confidencePct}% accuracy</span></div>""")
                 }

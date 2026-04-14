@@ -68,9 +68,14 @@ fun EmergencyFeedSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Derive the active categories from the cache: only entries that crossed the badge threshold.
+    // Unclassified "NONE" results are excluded — they are not real emergencies.
     val countByCategory: Map<String, Int> = remember(classificationCache.size) {
         classificationCache.values
-            .filter { shouldShowEmergencyBadge(it) && it.emergencyType.isNotEmpty() }
+            .filter {
+                shouldShowEmergencyBadge(it) &&
+                    it.emergencyType.isNotEmpty() &&
+                    it.emergencyType != "NONE"
+            }
             .groupBy { it.emergencyType }
             .mapValues { it.value.size }
     }
@@ -266,7 +271,7 @@ private fun buildReportData(
     // Unique message ID: DM-YYYYMMDD-HHMM
     val messageNumber = "DM-${dateFmt.format(now).replace("-", "")}-${timeFmt.format(now)}"
 
-    val categories = sortedCategories.map { cat ->
+    val categories = sortedCategories.filter { it != "NONE" }.map { cat ->
         val (emoji, label) = categoryEmojiAndLabel(cat)
         val catMessages = messages.filter { msg ->
             val result = classificationCache[msg.id] ?: return@filter false
@@ -326,7 +331,7 @@ private fun consolidateMessages(
 
             // Split text at the appended location tag (if present) so we never
             // truncate GPS coordinates mid-number.
-            val content = msg.content
+            val content = stripSourceMarkers(msg.content)
             val locIdx = content.indexOf("\n📍")
             val (mainText, locPart) = if (locIdx >= 0)
                 content.substring(0, locIdx) to content.substring(locIdx)
@@ -342,3 +347,16 @@ private fun consolidateMessages(
             )
         }
 }
+
+/**
+ * Removes emoji decorations from the message so the ICS-213 report renders clean plain text:
+ *  • Inline category emoji: 🔥 🌊 🏥 🏚 🚨 ⛈ 🔍 🔧 📦 ⚠️
+ *    (emitted by VisionTFLiteClassifier/SceneToEmergencyMapper in photo-generated descriptions)
+ *
+ * The 📍 location marker is intentionally preserved — it stays in the report body.
+ */
+private val CATEGORY_EMOJI_REGEX = Regex("""[🔥🌊🏥🏚🚨⛈🔍🔧📦⚠️]""")
+private fun stripSourceMarkers(text: String): String =
+    text.replace(CATEGORY_EMOJI_REGEX, "")
+        .replace(Regex("""\s{2,}"""), " ")
+        .trim()

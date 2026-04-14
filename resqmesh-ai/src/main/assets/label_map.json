@@ -1,12 +1,12 @@
 {
-  "0": "FIRE",
-  "1": "FLOOD",
-  "2": "MEDICAL",
-  "3": "COLLAPSE",
-  "4": "INFRASTRUCTURE",
-  "5": "SECURITY",
-  "6": "WEATHER",
-  "7": "MISSING_PERSON",
-  "8": "RESOURCE_REQUEST",
-  "9": "NONE"
+  "0": "COLLAPSE",
+  "1": "FIRE",
+  "2": "FLOOD",
+  "3": "INFRASTRUCTURE",
+  "4": "MEDICAL",
+  "5": "MISSING_PERSON",
+  "6": "NONE",
+  "7": "RESOURCE_REQUEST",
+  "8": "SECURITY",
+  "9": "WEATHER"
 }

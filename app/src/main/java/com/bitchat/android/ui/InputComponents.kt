@@ -315,7 +315,12 @@ fun MessageInput(
                 backgroundColor = bg,
                 onTranscribed = { text ->
                     val current = latestValue.value.text
-                    val newText = if (current.isEmpty()) text else "$current $text"
+                    // Prefix with [🎤] when starting a new message (mirrors [📷] for photo-to-text)
+                    val newText = when {
+                        current.isEmpty() -> "[🎤] $text"
+                        current.contains("[🎤]") || current.contains("[📷]") -> "$current $text"
+                        else -> "$current $text"
+                    }
                     latestOnValueChange.value(
                         TextFieldValue(newText, TextRange(newText.length))
                     )

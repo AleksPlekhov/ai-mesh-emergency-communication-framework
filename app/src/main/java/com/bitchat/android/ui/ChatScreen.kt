@@ -27,7 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bitchat.android.model.BitchatMessage
 import com.bitchat.android.ui.media.FullScreenImageViewer
 import com.bitchat.android.ai.classifier.ClassificationResult
-import com.bitchat.android.ai.classifier.KeywordMessageClassifier
+import com.bitchat.android.ai.classifier.MessageClassifierFactory
 import com.bitchat.android.ai.classifier.MessagePriority
 import com.bitchat.android.ai.emergency.shouldShowEmergencyBadge
 import com.bitchat.android.ai.report.ICS213ReportData
@@ -43,9 +43,13 @@ import com.bitchat.android.report.ICS213ReportScreen
  * - AboutSheet: App info and password prompts
  * - ChatUIUtils: Utility functions for formatting and colors
  */
+/** Holds a message pending location-attachment confirmation, along with its detected category. */
+private data class PendingLocationMessage(val text: String, val emergencyType: String)
+
 @Composable
 fun ChatScreen(viewModel: ChatViewModel) {
     val colorScheme = MaterialTheme.colorScheme
+    val chatScreenContext = androidx.compose.ui.platform.LocalContext.current
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val connectedPeers by viewModel.connectedPeers.collectAsStateWithLifecycle()
     val nickname by viewModel.nickname.collectAsStateWithLifecycle()
@@ -88,8 +92,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var scrollToMessageId by remember { mutableStateOf<String?>(null) }
     var icsReportData by remember { mutableStateOf<ICS213ReportData?>(null) }
     // Location attachment — holds a message that is pending location confirmation before send
-    val keywordClassifier = remember { KeywordMessageClassifier() }
-    var pendingMessageText by remember { mutableStateOf<String?>(null) }
+    val sendGateClassifier = remember {
+        MessageClassifierFactory.create(chatScreenContext)
+    }
+    var pendingMessage by remember { mutableStateOf<PendingLocationMessage?>(null) }
     val emergencyCount = remember(classificationCache.size) {
         classificationCache.values.count { shouldShowEmergencyBadge(it) }
     }
@@ -222,10 +228,18 @@ fun ChatScreen(viewModel: ChatViewModel) {
         onSend = {
             val text = messageText.text.trim()
             if (text.isNotEmpty()) {
-                val result = keywordClassifier.classify(text)
-                if (result.priority == MessagePriority.CRITICAL || result.priority == MessagePriority.HIGH) {
+                // Use the same composite classifier as the message list so the
+                // send-gate stays consistent with the emergency badge logic.
+                val result = sendGateClassifier.classify(text)
+                val isEmergency = shouldShowEmergencyBadge(result) &&
+                    (result.priority == MessagePriority.CRITICAL ||
+                     result.priority == MessagePriority.HIGH)
+                if (isEmergency) {
                     // Intercept — show location attachment sheet before dispatching
-                    pendingMessageText = text
+                    pendingMessage = PendingLocationMessage(
+                        text = text,
+                        emergencyType = result.emergencyType
+                    )
                     messageText = TextFieldValue("")
                 } else {
                     viewModel.sendMessage(text)
@@ -384,22 +398,23 @@ fun ChatScreen(viewModel: ChatViewModel) {
         )
     }
 
-    // Location attachment sheet — shown when keyword classifier flags a CRITICAL/HIGH message
-    pendingMessageText?.let { text ->
+    // Location attachment sheet — shown when the composite classifier flags an emergency
+    pendingMessage?.let { pending ->
         LocationAttachSheet(
+            emergencyType = pending.emergencyType,
             onSend = { location ->
-                val finalText = if (location != null) "$text\n📍 $location" else text
+                val finalText = if (location != null) "${pending.text}\n📍 $location" else pending.text
                 viewModel.sendMessage(finalText)
-                pendingMessageText = null
+                pendingMessage = null
                 forceScrollToBottom = !forceScrollToBottom
             },
             onSkip = {
                 // Skip = discard the message, do not send
-                pendingMessageText = null
+                pendingMessage = null
             },
             onDismiss = {
                 // Swipe-dismiss = discard the message, do not send
-                pendingMessageText = null
+                pendingMessage = null
             }
         )
     }

@@ -120,8 +120,7 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
             "EXPLOSION"               to "COLLAPSE",
             "BUILDING COLLAPSED"      to "COLLAPSE",
             "STRUCTURE COLLAPSE"      to "COLLAPSE",
-            // Person collapse — medical emergency ("she collapsed", "old woman collapsed", etc.)
-            "COLLAPSED"               to "MEDICAL",
+            "COLLAPSED"               to "COLLAPSE",
             // Fire — immediate evacuation
             "IMMEDIATE EVACUATION"    to "FIRE",
             "WILDFIRE APPROACHING"    to "FIRE"
@@ -233,6 +232,13 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
             "ICS-213"                 to "INFRASTRUCTURE",
             "INCIDENT COMMAND"        to "INFRASTRUCTURE",
             // Missing person
+            "NOT ANSWERING"    to "MISSING_PERSON",
+            "NOT RESPONDING"   to "MISSING_PERSON",
+            "NOT PICKING UP"   to "MISSING_PERSON",
+            "NOT REACHABLE"    to "MISSING_PERSON",
+            "CAN'T REACH"      to "MISSING_PERSON",
+            "CANNOT REACH"     to "MISSING_PERSON",
+            "CANT REACH"       to "MISSING_PERSON",
             "MISSING PERSON"          to "MISSING_PERSON",
             "PERSON MISSING"          to "MISSING_PERSON",
             "MISSING CHILD"           to "MISSING_PERSON",

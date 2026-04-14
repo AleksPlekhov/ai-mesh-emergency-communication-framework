@@ -36,9 +36,6 @@ private val ReportLabel    = Color(0xFF333333)
 private val ReportBorder   = Color(0xFF000000)
 private val ReportLabelBg  = Color(0xFFF0F0F0)
 private val ReportSubtle   = Color(0xFF555555)
-private val BadgeCritical  = Color(0xFFCC0000)
-private val BadgeHigh      = Color(0xFFE65100)
-private val BadgeRoutine   = Color(0xFF777777)
 
 /**
  * Full-screen Compose overlay that renders a preview of the ICS-213 report
@@ -370,39 +367,28 @@ private fun GridDivider() =
 
 @Composable
 private fun CategoryBlock(cat: ICS213Category) {
-    val badgeColor = when (cat.priority) {
-        "CRITICAL" -> BadgeCritical
-        "HIGH"     -> BadgeHigh
-        else       -> BadgeRoutine
-    }
     Column(modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)) {
-        // Category header: emoji + name + priority badge + count
+        // Category header: plain name + priority text + count (no emoji, no colored backgrounds)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "${cat.emoji} ${cat.name}",
+                text = cat.name,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
                 color = ReportText
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .background(badgeColor)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = cat.priority,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 9.sp,
-                    color = Color.White,
-                    letterSpacing = 0.5.sp
-                )
-            }
+            Text(
+                text = "[${cat.priority}]",
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp,
+                color = ReportText,
+                letterSpacing = 0.5.sp
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "(${cat.messages.size} report${if (cat.messages.size != 1) "s" else ""})",

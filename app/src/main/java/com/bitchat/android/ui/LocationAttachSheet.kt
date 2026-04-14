@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bitchat.android.ai.emergency.categoryEmojiAndLabel
 import com.google.android.gms.location.LocationServices
 
 /**
@@ -26,6 +27,9 @@ import com.google.android.gms.location.LocationServices
  * before the message is dispatched. Dismissing or tapping "Skip" sends the message
  * without a location so the original message is never lost.
  *
+ * @param emergencyType The detected category (e.g. "SECURITY", "FIRE"); blank if unknown.
+ *                      Rendered in the header with its emoji/label so the user knows
+ *                      *why* the sheet appeared.
  * @param onSend Called with the location string to append (null = no location).
  *               The caller is responsible for sending the final message.
  * @param onSkip Called when the user taps "Skip" — the message should NOT be sent.
@@ -35,6 +39,7 @@ import com.google.android.gms.location.LocationServices
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationAttachSheet(
+    emergencyType: String,
     onSend: (location: String?) -> Unit,
     onSkip: () -> Unit,
     onDismiss: () -> Unit
@@ -66,6 +71,18 @@ fun LocationAttachSheet(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            // ── Detected category badge ─────────────────────────────────────
+            if (emergencyType.isNotBlank()) {
+                val (emoji, label) = categoryEmojiAndLabel(emergencyType)
+                Text(
+                    text = "$emoji $label",
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.error
                 )
             }

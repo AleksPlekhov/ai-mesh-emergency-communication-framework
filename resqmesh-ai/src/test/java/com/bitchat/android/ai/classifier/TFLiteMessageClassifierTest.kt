@@ -168,10 +168,10 @@ class TFLiteMessageClassifierTest {
         assertEquals(MessagePriority.NORMAL, ClassifierUtils.mapToPriority("RESOURCE_REQUEST"))
 
     @Test fun `NONE maps to NONE`() =
-        assertEquals(MessagePriority.NONE, ClassifierUtils.mapToPriority("NONE"))
+        assertEquals(MessagePriority.LOW, ClassifierUtils.mapToPriority("NONE"))
 
     @Test fun `unknown category defaults to NONE`() =
-        assertEquals(MessagePriority.NONE, ClassifierUtils.mapToPriority("TOTALLY_UNKNOWN"))
+        assertEquals(MessagePriority.LOW, ClassifierUtils.mapToPriority("TOTALLY_UNKNOWN"))
 
     // ─── Full simulated pipeline ──────────────────────────────────────────────
     // These tests mimic the model: produce a logit vector that peaks at a

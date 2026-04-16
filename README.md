@@ -133,13 +133,13 @@ Classifies incoming mesh messages into priority tiers and emergency categories u
 `MessageClassifierFactory` selects `CompositeMessageClassifier` (keyword + TFLite) when a model asset is present, or `KeywordMessageClassifier` alone otherwise, ensuring the system degrades gracefully on constrained hardware.
 
 **Model specifications:**
-- Architecture: dual-Conv1D (kernel sizes 3 and 5, fused via residual add) + GlobalMaxPooling + Dense
+- Architecture: parallel Conv1D branches (kernel sizes 3 and 5) with additive fusion + sequential Conv1D layer + GlobalMaxPooling + Dense
 - Quantization: INT8 via TFLite concrete function tracing
 - Model size: **1,137 KB**
 - Vocabulary: 5,000-token cap, **2,979 active tokens**
 - Training corpus: **2,700 messages** (270 per category × 10 categories), FEMA/ICS-derived, iteratively cleaned to remove duplicates and cross-category leakage
 - Train/val/test split: 70/15/15 stratified, random_state=42
-- Optimizer: Adam (lr=5×10⁻⁴), 80 epochs, early stopping patience=8
+- Optimizer: Adam (lr=5×10⁻⁴), 80 epochs, early stopping patience=15
 
 **Evaluation results (held-out test set, N=405):**
 
@@ -167,14 +167,17 @@ Classifies incoming mesh messages into priority tiers and emergency categories u
 The keyword stage contributes a 0.004 F1 gain over neural-only, but provides two architectural benefits: (1) deterministic CRITICAL classification without a confidence threshold; (2) graceful degradation to keyword-only mode (F1=0.60) when the TFLite asset is unavailable.
 
 **Out-of-domain generalization:**
-Zero-shot evaluation on 120 crisis-style messages (authored to mimic crisis Twitter register per CrisisLex26 taxonomy, unseen during training): **macro-F1=0.87** (mean confidence 0.92) — a 0.04 domain gap versus the held-out test set.
+Zero-shot evaluation on 120 crisis-style messages (authored to mimic crisis Twitter register per CrisisLex26 taxonomy, unseen during training): **macro-F1=0.87** (mean confidence 0.92) — a 0.05 domain gap versus the held-out test set.
 
-**Inference latency (physical devices):**
-- Pixel 9 Pro: 0.06 ms mean
-- Galaxy S10+: 0.19 ms mean
-- Pixel 3a: 0.49 ms (P95: 0.58 ms)
+**Inference latency (CPU-only TFLite Interpreter, 200 runs after 10 warm-up discards):**
 
-All devices achieve sub-millisecond latency across the full Android hardware spectrum.
+| Device | SoC | Android | Mean latency | P95 latency | P99 latency | Max latency |
+| --- | --- | --- | --- | --- | --- | --- |
+| Pixel 9 Pro | Tensor G4 | 16 | 0.19 ms | 0.20 ms | 0.20 ms | 0.26 ms |
+| Samsung Galaxy S10 | Snapdragon 855 | 12 | 0.38 ms | 0.40 ms | 0.46 ms | 0.46 ms |
+| Pixel 3a | Snapdragon 670 | 11 | 1.97 ms | 2.12 ms | 2.17 ms | 2.19 ms |
+
+All devices achieve sub-2 ms inference — negligible relative to BLE transmission delays across the Android hardware spectrum from 2019 mid-range to 2024 flagship.
 
 **Real-time visual indicators in the chat UI:**
 - Each classified message shows a **coloured left stripe** matching its category (e.g., red for MEDICAL, orange for FIRE, blue for FLOOD).

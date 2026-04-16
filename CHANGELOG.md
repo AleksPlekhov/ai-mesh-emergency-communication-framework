@@ -7,15 +7,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # Changelog — ResQMesh AI
 
-## [0.0.4] - 2026-04-08
+## [0.0.4] - 2026-04-22
 
 ### Added
-- `VisionTFLiteClassifier` (`:resqmesh-ai`, `ai/vision/`) — on-device TFLite image classifier for emergency scene detection (collapse, fire, flood, normal); loads `emergency_vision_model.tflite` and `vision_label_map.json` from assets; accepts Bitmap input, resizes to 224×224, normalizes pixels to [-1, 1], and runs inference; returns `SceneAnalysisResult` compatible with the existing vision pipeline; includes `isAvailable(context)` check for graceful degradation
-- `emergency_vision_model.tflite` and `vision_label_map.json` assets in `:resqmesh-ai` module
+- `VisionTFLiteClassifier` (`:resqmesh-ai`, `ai/vision/`) — on-device TFLite image classifier for emergency scene detection (fire, flood, normal, security, weather); loads `emergency_vision_model.tflite` and `vision_label_map.json` from assets; accepts Bitmap input, resizes to 224×224, normalizes pixels to [-1, 1], and runs inference; returns `SceneAnalysisResult` compatible with the existing vision pipeline; includes `isAvailable(context)` check for graceful degradation
+- `emergency_vision_model.tflite` (2.68 MB MobileNetV2) and `vision_label_map.json` assets in `:resqmesh-ai` module
+- `PriorityQueueBenchmarkTest` (M5 benchmark suite) in `:resqmesh-ai` — JUnit coverage measuring CRITICAL-packet latency under queue load
+- `LatencyBenchmark` utility in `:resqmesh-ai` for classifier/relay performance measurement
 
 ### Changed
 - `ImageSceneAnalyzer` now uses a hybrid approach: tries `VisionTFLiteClassifier` first (confidence ≥ 0.55); falls back to ML Kit Image Labeling when TFLite is unavailable or not confident enough
 - Added `noCompress += "tflite"` to `:resqmesh-ai` build config to prevent asset compression
+- Retrained `emergency_model.tflite` — grew from 430 KB to 1.16 MB with updated vocabulary; `label_map.json` and `tokenizer.json` refreshed accordingly for improved accuracy across the 10 emergency categories
+- `KeywordMessageClassifier` — additional phrases and edge-case handling refinements
+- `ICS213ReportGenerator` output formatting refinements (header, signature blocks, row layout)
+- `ICS213ReportScreen` layout cleanup — improved spacing, header rendering, and signature-block presentation
+- `ChatScreen`, `EmergencyFeedSheet`, `InputComponents` — miscellaneous UI polish for message input, emergency feed presentation, and category badges
+- `README.md` substantially rewritten (161 insertions / 90 deletions) to document the photo-to-category pipeline, retrained text classifier, and current feature set
+- `CLAUDE.md` expanded with image-to-category pipeline documentation, vision module layout, and model asset inventory
+
+### Fixed
+- `LocationAttachSheet` — corrected dialog lifecycle so `onSkip` and swipe-dismiss correctly suppress the outgoing message; `onSend` reliably appends `📍 lat,lon` to the message body
+- `ChatScreen` — location-dialog wiring updated to match the corrected `LocationAttachSheet` callbacks
 
 ## [0.0.3] - 2026-04-06
 

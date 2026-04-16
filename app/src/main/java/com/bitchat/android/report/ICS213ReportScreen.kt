@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.bitchat.android.ai.report.ICS213Category
+import com.bitchat.android.ai.report.ICS213Message
 import com.bitchat.android.ai.report.ICS213ReportData
 import com.bitchat.android.ai.report.ICS213ReportGenerator
 import java.io.File
@@ -398,50 +399,58 @@ private fun CategoryBlock(cat: ICS213Category) {
             )
         }
 
-        // Message rows
-        cat.messages.forEach { msg ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = 3.dp)
-            ) {
-                Text(
-                    text = "•",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
-                    color = ReportText,
-                    modifier = Modifier.padding(end = 6.dp, top = 1.dp)
-                )
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Messages grouped by sender — name appears once, all their messages below it.
+        // Preserves first-appearance order so the report reads chronologically.
+        val messagesBySender: Map<String, List<ICS213Message>> = cat.messages
+            .groupBy { it.sender }
+        messagesBySender.forEach { (sender, senderMessages) ->
+            // Sender header
+            Text(
+                text = sender,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = ReportText,
+                modifier = Modifier.padding(start = 16.dp, top = 6.dp)
+            )
+            // This sender's messages
+            senderMessages.forEach { msg ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, top = 3.dp)
+                ) {
+                    Text(
+                        text = "•",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        color = ReportText,
+                        modifier = Modifier.padding(end = 6.dp, top = 1.dp)
+                    )
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "[${msg.timestamp}]",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
+                                color = ReportSubtle
+                            )
+                            Text(
+                                text = "  · ${msg.confidencePct}%",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 10.sp,
+                                color = Color(0xFF777777)
+                            )
+                        }
                         Text(
-                            text = msg.sender,
+                            text = "\u201C${msg.text}\u201D",
                             fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
-                            color = ReportText
-                        )
-                        Text(
-                            text = "  [${msg.timestamp}]",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            color = ReportSubtle
-                        )
-                        Text(
-                            text = "  · ${msg.confidencePct}%",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 10.sp,
-                            color = Color(0xFF777777)
+                            color = ReportText,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.padding(top = 1.dp)
                         )
                     }
-                    Text(
-                        text = "\u201C${msg.text}\u201D",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        color = ReportText,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(top = 1.dp)
-                    )
                 }
             }
         }

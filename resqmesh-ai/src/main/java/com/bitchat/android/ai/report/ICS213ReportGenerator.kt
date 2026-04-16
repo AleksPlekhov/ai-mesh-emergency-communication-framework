@@ -81,8 +81,12 @@ object ICS213ReportGenerator {
     letter-spacing: 0.5px;
     vertical-align: middle;
   }
+  .sender-header {
+    margin: 6px 0 2px 20px;
+    font-size: 12px;
+  }
   .message-row {
-    margin: 3px 0 3px 20px;
+    margin: 2px 0 2px 36px;
     font-size: 12px;
     line-height: 1.5;
   }
@@ -208,8 +212,12 @@ object ICS213ReportGenerator {
             data.categories.forEach { cat ->
                 val count = cat.messages.size
                 appendLine("""  <div class="category-header">${cat.name.htmlEscape()} &nbsp;<span class="priority-label">[${cat.priority.htmlEscape()}]</span> &nbsp;<span style="font-weight:normal;font-size:12px">(${count} report${if (count != 1) "s" else ""})</span></div>""")
-                cat.messages.forEach { msg ->
-                    appendLine("""  <div class="message-row">&#8226; <b>${msg.sender.htmlEscape()}</b> [${msg.timestamp.htmlEscape()}] &mdash; &ldquo;${msg.text.htmlEscape()}&rdquo;<span class="confidence"> &nbsp;·&nbsp; ${msg.confidencePct}% accuracy</span></div>""")
+                // Group messages by sender so the name appears once followed by all their messages.
+                cat.messages.groupBy { it.sender }.forEach { (sender, senderMessages) ->
+                    appendLine("""  <div class="sender-header"><b>${sender.htmlEscape()}</b></div>""")
+                    senderMessages.forEach { msg ->
+                        appendLine("""  <div class="message-row">&#8226; [${msg.timestamp.htmlEscape()}] &mdash; &ldquo;${msg.text.htmlEscape()}&rdquo;<span class="confidence"> &nbsp;·&nbsp; ${msg.confidencePct}% accuracy</span></div>""")
+                    }
                 }
             }
         }

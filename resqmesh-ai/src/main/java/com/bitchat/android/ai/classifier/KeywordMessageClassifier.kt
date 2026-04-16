@@ -48,7 +48,7 @@ class KeywordMessageClassifier : MessagePriorityClassifier {
         val lowHit = LOW_KEYWORDS.firstOrNull { text.contains(it) }
         if (lowHit != null) {
             return ClassificationResult(
-                priority   = MessagePriority.NONE,
+                priority   = MessagePriority.LOW,
                 confidence = 0.75f,
                 reasoning  = "Keyword match: \"$lowHit\""
             )

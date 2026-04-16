@@ -88,7 +88,7 @@ fun runLatencyBenchmark(context: Context) {
             ids.forEach { putFloat(it.toFloat()) }  // FLOAT32 input
             rewind()
         }
-        val output = Array(1) { FloatArray(9) }
+        val output = Array(1) { FloatArray(10) }
         interpreter.run(inputBuffer, output)
     }
 
@@ -102,7 +102,7 @@ fun runLatencyBenchmark(context: Context) {
             ids.forEach { putFloat(it.toFloat()) }
             rewind()
         }
-        val output = Array(1) { FloatArray(9) }
+        val output = Array(1) { FloatArray(10) }
 
         val t0 = System.nanoTime()
         interpreter.run(inputBuffer, output)
